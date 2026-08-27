@@ -10,8 +10,21 @@ terraform {
 }
 
 provider "snowflake" {
-  account  = var.snowflake_account
-  user     = var.snowflake_admin_user
-  password = var.snowflake_admin_password
-  role     = "SYSADMIN"
+  organization_name = var.snowflake_organization_name
+  account_name      = var.snowflake_account_name
+  user              = var.snowflake_admin_user
+  password          = var.snowflake_admin_password
+  role              = "SYSADMIN"
+}
+
+# Role creation and role-to-user grants are SECURITYADMIN's job in Snowflake's
+# built-in RBAC model, not SYSADMIN's (which owns compute/data objects like
+# warehouses, databases, and schemas).
+provider "snowflake" {
+  alias             = "securityadmin"
+  organization_name = var.snowflake_organization_name
+  account_name      = var.snowflake_account_name
+  user              = var.snowflake_admin_user
+  password          = var.snowflake_admin_password
+  role              = "SECURITYADMIN"
 }

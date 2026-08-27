@@ -25,5 +25,8 @@ models:
       +materialized: incremental
       +schema: marts
 
-on-run-end:
-  - "{{ mark_expired_trades() }}"
+# mark_expired_trades() is invoked as an explicit step after `dbt run`
+# (dbt run-operation mark_expired_trades), not via on-run-end: its ref()
+# inside an `execute`-guarded block can't be statically resolved into a
+# hook dependency by dbt >=1.9's stricter graph inference, and an explicit
+# step is what both the setup guide and the Airflow DAG already use anyway.

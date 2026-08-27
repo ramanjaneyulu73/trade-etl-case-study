@@ -20,7 +20,7 @@ and applies the rules in this order:
 |---|------|--------------|-----|
 | 1 | Reject trades with a lower version than existing | `REJECTED_LOWER_VERSION` | `version < max(version) over (partition by trade_id)` |
 | 2 | Replace trades with the same version | *(not a rejection)* | among rows sharing the trade's max version, the most recently arrived one wins (`row_number() over (partition by trade_id, version order by event_timestamp desc)`); the ones it supersedes are tagged `SUPERSEDED_SAME_VERSION`, not `REJECTED_*`, since the spec treats replace and reject as distinct outcomes |
-| 3 | Reject trades with a maturity date earlier than today | `REJECTED_PAST_MATURITY` | checked on the winning candidate row only |
+| 3 | Reject trades with a maturity date earlier than today | `REJECTED_PAST_MATURITY` | `maturity_date < loaded_at::date` — "today" meaning the day the message arrived, not the day the pipeline happens to be re-run (see note below) |
 | 5a | Non-positive notional (own rule, optional) | `REJECTED_INVALID_NOTIONAL` | data-quality guard — a booking system should never send a zero/negative notional |
 | 5b | Unsupported currency (own rule, optional) | `REJECTED_INVALID_CURRENCY` | checked against `var('valid_currencies')` in `dbt_project.yml`, so the allow-list is a one-line config change, not a code change |
 | 5c | Maturity before trade date (own rule, optional) | `REJECTED_INVALID_DATES` | catches an internally inconsistent message even if it isn't yet in the past relative to today |
@@ -31,6 +31,18 @@ Rules 1 and 2 fall out of the same ranking logic rather than being two separate
 and on a tie keep the latest arrival" is a single ordering rule, and reject/replace are
 just names for what happens to the rows that ranking doesn't keep.
 
+**Why rule 3 anchors on `loaded_at::date` and not `current_date()`**: `int_trade_classification`
+is fully recomputed from complete history on every run. Anchoring rule 3 on
+`current_date()` instead would make it re-evaluate *every past trade* against today's
+date on every run — so a trade accepted weeks ago, once its maturity date passed, would
+retroactively flip from `VALID_CURRENT` to `REJECTED_PAST_MATURITY` and disappear from
+`fct_valid_trades` entirely, rather than staying there with `trade_status = 'EXPIRED'`
+the way rule 4 intends. Anchoring on the date the message was *first received* makes
+rule 3 a one-time, permanent ingestion-time judgment ("was this dead on arrival?"),
+cleanly separating it from rule 4's ongoing, today-relative expiry check. This was
+caught by testing against a live warehouse, not by inspection — see the verification
+note below.
+
 ## `fct_valid_trades` — current state, rule 4 (mark expired)
 
 One row per `trade_id`: the row from `int_trade_classification` with `disposition =
@@ -39,12 +51,17 @@ current_date()`, `ACTIVE` otherwise — computed every build, so it can never dr
 sync with the calendar.
 
 The `mark_expired_trades()` macro (`dbt_trades/macros/mark_expired_trades.sql`) also
-does this as a literal `UPDATE ... SET trade_status = 'EXPIRED'`, run automatically after
-every `dbt run` via `on-run-end`, and callable directly with
-`dbt run-operation mark_expired_trades`. It's redundant with the derived column *today*
-because `fct_valid_trades` is fully rebuilt every run — but it's the piece of the design
-that becomes load-bearing the moment the model moves to incremental materialization at
-higher volume (see `architecture.md`), so it's included now rather than retrofitted later.
+does this as a literal `UPDATE ... SET trade_status = 'EXPIRED'`, run as an explicit step
+after `dbt run` — both the setup guide and the Airflow DAG run
+`dbt run-operation mark_expired_trades` right after `dbt run`/`dbt test`. It isn't wired
+to dbt's `on-run-end` hook: the macro's `ref('fct_valid_trades')` sits inside an
+`execute`-guarded block (needed so `dbt run-operation` and normal parsing both work), and
+dbt's dependency inference for `on-run-end` can't resolve a `ref()` in that position —
+confirmed by actually running it, not just by reading dbt's docs. The macro is redundant
+with the derived column *today* because `fct_valid_trades` is fully rebuilt every run —
+but it's the piece of the design that becomes load-bearing the moment the model moves to
+incremental materialization at higher volume (see `architecture.md`), so it's included
+now rather than retrofitted later.
 
 ## `fct_rejected_trades` — rule 6 (audit log)
 
@@ -52,6 +69,25 @@ Append-only: every message with a `REJECTED_*` disposition is inserted once and 
 updated, keyed on `(trade_id, version, source_file_name)`. Re-running `int_trade_classification`
 (a view over full history) doesn't create duplicate audit rows because the incremental
 `insert`-only strategy anti-joins against what's already in the table.
+
+## Verified against a live warehouse
+
+Every rule listed above was exercised against a real Snowflake trial account, not just
+written and assumed correct:
+
+- Ran 200 simulated trades through `dbt run` + `dbt test` (13/13 tests passing): 148
+  landed in `fct_valid_trades`, 32 in `REJECTED_LOWER_VERSION`, 6 in
+  `REJECTED_INVALID_DATES`, 9 correctly `SUPERSEDED_SAME_VERSION` (not counted as
+  rejections, per rule 2).
+- `REJECTED_PAST_MATURITY` (rule 3) didn't fire on that batch — the synthetic
+  "already-matured" trades generated by `generate_trades.py` always also have
+  `maturity_date < trade_date`, so they're caught by `REJECTED_INVALID_DATES` first.
+  Loaded one hand-crafted trade (`trade_date` 10 days ago, `maturity_date` 3 days ago —
+  after `trade_date` but before today) to isolate rule 3, and confirmed it landed in
+  `REJECTED_PAST_MATURITY` specifically.
+- That same live test is what surfaced the `current_date()` vs `loaded_at::date` bug
+  described above — the original `current_date()` version worked for a same-day test but
+  would have silently misbehaved for any trade whose maturity passed after acceptance.
 
 ## Why this tech stack
 

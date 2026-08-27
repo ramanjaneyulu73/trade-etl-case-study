@@ -38,17 +38,22 @@ resource "snowflake_table" "raw_trades" {
 }
 
 resource "snowflake_stage" "raw_trades_stage" {
-  database    = snowflake_database.trade_etl_db.name
-  schema      = snowflake_schema.raw.name
-  name        = var.raw_stage_name
-  file_format = "TYPE = JSON STRIP_OUTER_ARRAY = FALSE"
+  database = snowflake_database.trade_etl_db.name
+  schema   = snowflake_schema.raw.name
+  name     = var.raw_stage_name
+  # Snowflake's JSON file format always reports NULL_IF = [] on read-back
+  # (it's the type-specific default, not something we're setting); matching
+  # it here avoids Terraform showing permanent no-op drift on every plan.
+  file_format = "TYPE = JSON NULL_IF = []"
 }
 
 resource "snowflake_account_role" "trade_etl_role" {
-  name = var.role_name
+  provider = snowflake.securityadmin
+  name     = var.role_name
 }
 
 resource "snowflake_grant_account_role" "trade_etl_role_to_user" {
+  provider  = snowflake.securityadmin
   role_name = snowflake_account_role.trade_etl_role.name
   user_name = var.service_user_name
 }

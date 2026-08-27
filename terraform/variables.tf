@@ -1,5 +1,10 @@
-variable "snowflake_account" {
-  description = "Snowflake account identifier, e.g. xy12345.us-east-1"
+variable "snowflake_organization_name" {
+  description = "Snowflake organization name (the part before the hyphen in an org-account identifier, e.g. LCVNXNE in LCVNXNE-QC12462)"
+  type        = string
+}
+
+variable "snowflake_account_name" {
+  description = "Snowflake account name (the part after the hyphen in an org-account identifier, e.g. QC12462 in LCVNXNE-QC12462)"
   type        = string
 }
 
