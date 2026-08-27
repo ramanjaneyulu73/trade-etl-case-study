@@ -1,0 +1,59 @@
+@startuml architecture
+title Trade ETL Pipeline - Architecture
+
+skinparam componentStyle rectangle
+
+package "Standalone Machine" {
+  [generate_trades.py] as Gen
+  [load_to_snowflake.py] as Load
+  [dbt Core CLI] as Dbt
+  [Streamlit Dashboard] as Dash
+  [Terraform CLI] as TF
+  node "Docker: Apache Airflow" as Airflow {
+    [Scheduler]
+    [Webserver]
+  }
+}
+
+cloud "Snowflake (Trial Account)" {
+  database "TRADE_ETL_DB" {
+    folder "RAW schema" {
+      [RAW_TRADES_STAGE] as Stage
+      [RAW_TRADES table] as RawTable
+    }
+    folder "STAGING schema (dbt)" {
+      [stg_trades view]
+    }
+    folder "MARTS schema (dbt)" {
+      [int_trade_classification]
+      [fct_valid_trades]
+      [fct_rejected_trades]
+    }
+  }
+  [Query History / Warehouse Metering\n(admin views)] as AdminViews
+}
+
+package "GitHub" {
+  [Repo: code + dbt + terraform] as Repo
+  [Actions: dbt_ci / terraform_ci / python_ci] as CI
+}
+
+Gen --> Load : writes .jsonl files
+Load --> Stage : PUT (stage file)
+Stage --> RawTable : COPY INTO
+Airflow --> Gen : triggers
+Airflow --> Load : triggers
+Airflow --> Dbt : triggers dbt run / test /\nrun-operation mark_expired_trades
+Dbt --> RawTable : reads
+Dbt --> [stg_trades view]
+[stg_trades view] --> [int_trade_classification]
+[int_trade_classification] --> [fct_valid_trades] : disposition = VALID_CURRENT
+[int_trade_classification] --> [fct_rejected_trades] : disposition LIKE REJECTED_%
+Dash --> [fct_valid_trades] : queries
+Dash --> [fct_rejected_trades] : queries
+TF --> "Snowflake (Trial Account)" : provisions DB/schema/\nwarehouse/role/stage
+Repo --> CI : on push/PR
+CI --> "Snowflake (Trial Account)" : dbt build / terraform plan\n(CI schema, via secrets)
+Airflow ..> Airflow : email alert on task failure
+
+@enduml

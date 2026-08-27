@@ -1,0 +1,29 @@
+name: 'trade_etl'
+version: '1.0.0'
+config-version: 2
+
+profile: 'trade_etl'
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+snapshot-paths: ["snapshots"]
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  valid_currencies: ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'AUD', 'CHF']
+
+models:
+  trade_etl:
+    staging:
+      +materialized: view
+      +schema: staging
+    marts:
+      +materialized: incremental
+      +schema: marts
+
+on-run-end:
+  - "{{ mark_expired_trades() }}"

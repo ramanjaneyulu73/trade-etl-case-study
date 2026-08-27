@@ -1,0 +1,5 @@
+dbt-core>=1.8,<1.9
+dbt-snowflake>=1.8,<1.9
+snowflake-connector-python[pandas]>=3.11.0
+python-dotenv>=1.0.1
+faker>=25.0.0

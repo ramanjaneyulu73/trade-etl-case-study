@@ -1,0 +1,42 @@
+name: Terraform CI
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform_ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: terraform fmt -check
+        run: terraform fmt -check -recursive
+
+      - name: terraform init
+        run: terraform init -backend=false
+
+      - name: terraform validate
+        run: terraform validate
+
+      - name: terraform plan
+        if: ${{ secrets.SNOWFLAKE_ACCOUNT != '' }}
+        run: terraform plan -no-color
+        env:
+          TF_VAR_snowflake_account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          TF_VAR_snowflake_admin_user: ${{ secrets.SNOWFLAKE_USER }}
+          TF_VAR_snowflake_admin_password: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          TF_VAR_service_user_name: ${{ secrets.SNOWFLAKE_USER }}

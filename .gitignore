@@ -1,0 +1,35 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# dbt
+dbt_trades/.user.yml
+dbt_trades/target/
+dbt_trades/dbt_packages/
+dbt_trades/logs/
+profiles.yml
+
+# terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/terraform.tfvars
+
+# secrets / env
+.env
+*.pem
+*.key
+
+# generated data
+data/incoming/*.jsonl
+data/processed/*.jsonl
+!data/incoming/.gitkeep
+!data/processed/.gitkeep
+
+# airflow
+orchestration/airflow/logs/
+orchestration/airflow/plugins/__pycache__/
+
+.DS_Store

@@ -1,0 +1,33 @@
+name: Python CI
+
+on:
+  pull_request:
+    paths:
+      - "ingestion/**"
+      - "dashboard/**"
+  push:
+    branches: [main]
+    paths:
+      - "ingestion/**"
+      - "dashboard/**"
+
+jobs:
+  lint-and-smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r ingestion/requirements.txt
+          pip install ruff
+
+      - name: Lint
+        run: ruff check ingestion dashboard
+
+      - name: Smoke test trade generator
+        run: python ingestion/generate_trades.py --count 20 --seed 42

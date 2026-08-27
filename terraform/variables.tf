@@ -1,0 +1,45 @@
+variable "snowflake_account" {
+  description = "Snowflake account identifier, e.g. xy12345.us-east-1"
+  type        = string
+}
+
+variable "snowflake_admin_user" {
+  description = "Login used to run Terraform. Must have SYSADMIN + SECURITYADMIN in the trial account."
+  type        = string
+}
+
+variable "snowflake_admin_password" {
+  description = "Password for snowflake_admin_user."
+  type        = string
+  sensitive   = true
+}
+
+variable "service_user_name" {
+  description = "Existing Snowflake login (e.g. the trial account's own user) to grant the trade_etl role to, for pipeline scripts and dbt."
+  type        = string
+}
+
+variable "database_name" {
+  type    = string
+  default = "TRADE_ETL_DB"
+}
+
+variable "warehouse_name" {
+  type    = string
+  default = "TRADE_ETL_WH"
+}
+
+variable "warehouse_size" {
+  type    = string
+  default = "XSMALL"
+}
+
+variable "role_name" {
+  type    = string
+  default = "TRADE_ETL_ROLE"
+}
+
+variable "raw_stage_name" {
+  type    = string
+  default = "RAW_TRADES_STAGE"
+}

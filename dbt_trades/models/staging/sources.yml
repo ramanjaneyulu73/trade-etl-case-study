@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ env_var('SNOWFLAKE_DATABASE', 'TRADE_ETL_DB') }}"
+    schema: raw
+    tables:
+      - name: raw_trades
+        description: Landing table populated by ingestion/load_to_snowflake.py via PUT + COPY INTO.
+        columns:
+          - name: raw_payload
+            description: Full JSON trade message as a VARIANT.
+          - name: source_file_name
+            description: Name of the file the record was staged from, for lineage/audit.
+          - name: loaded_at
+            description: Timestamp the row landed in Snowflake.

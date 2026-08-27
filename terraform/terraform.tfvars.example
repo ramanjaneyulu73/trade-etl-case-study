@@ -1,0 +1,4 @@
+snowflake_account         = "xy12345.us-east-1"
+snowflake_admin_user      = "YOUR_TRIAL_LOGIN"
+snowflake_admin_password  = "changeme"
+service_user_name         = "YOUR_TRIAL_LOGIN"

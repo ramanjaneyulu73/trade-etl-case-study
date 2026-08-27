@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: stg_trades
+    description: One row per raw trade message, flattened out of the VARIANT payload and type-cast.
+    columns:
+      - name: trade_id
+        description: Business identifier for the trade, stable across amendments.
+        tests:
+          - not_null
+      - name: version
+        description: Monotonically increasing version number assigned by the upstream booking system.
+        tests:
+          - not_null
+      - name: maturity_date
+        tests:
+          - not_null
+      - name: notional
+        tests:
+          - not_null

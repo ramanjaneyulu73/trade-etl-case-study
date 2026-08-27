@@ -1,0 +1,49 @@
+name: dbt CI
+
+on:
+  pull_request:
+    paths:
+      - "dbt_trades/**"
+      - ".github/workflows/dbt_ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "dbt_trades/**"
+
+jobs:
+  dbt-build:
+    runs-on: ubuntu-latest
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+      SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+      SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+      SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+      DBT_PROFILES_DIR: ${{ github.workspace }}/dbt_trades
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dbt
+        run: pip install dbt-core dbt-snowflake
+
+      - name: Copy CI profile
+        run: cp dbt_trades/profiles.yml.example dbt_trades/profiles.yml
+
+      - name: dbt deps
+        run: dbt deps
+        working-directory: dbt_trades
+        continue-on-error: true
+
+      - name: dbt parse (always runs, no warehouse needed)
+        run: dbt parse
+        working-directory: dbt_trades
+
+      - name: dbt build against CI schema
+        if: ${{ env.SNOWFLAKE_ACCOUNT != '' }}
+        run: dbt build --target ci
+        working-directory: dbt_trades
