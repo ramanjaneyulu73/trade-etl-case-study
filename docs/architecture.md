@@ -1,6 +1,8 @@
 # Architecture
 
-See [diagrams/architecture.puml](diagrams/architecture.puml) for the component diagram
+See the [README](../README.md#architecture) for the rendered component diagram (GitHub
+renders it inline via Mermaid). The same diagram is also kept as PlantUML source at
+[diagrams/architecture.puml](diagrams/architecture.puml) for tools that prefer it
 (render with the PlantUML VS Code extension, or https://www.plantuml.com/plantuml).
 
 ## Data flow
