@@ -8,12 +8,14 @@ separately, and orchestrates the whole thing with Airflow.
 
 | Area | State |
 |---|---|
-| Code: ingestion, dbt project, Terraform, Airflow DAG, dashboard, CI | ✅ Complete, reviewed, and validated end-to-end (see [Validated so far](#validated-so-far)) |
+| Code: ingestion, dbt project, Terraform, Airflow DAG, dashboard, CI/CD | ✅ Complete, reviewed, and validated end-to-end (see [Validated so far](#validated-so-far)) |
 | Snowflake trial account | ✅ Live (AWS Singapore) |
-| `terraform apply` | ✅ Applied — warehouse/database/schemas/role/grants live, zero drift |
-| `dbt run` / `dbt test` against the live warehouse | ✅ Run repeatedly against real data, 13/13 tests passing |
+| `terraform apply` | ✅ Applied — warehouse/database/schemas/role/grants/monitoring live, zero drift, remote state in Terraform Cloud |
+| `dbt run` / `dbt test` against the live warehouse | ✅ Run repeatedly against real data, 13/13 tests passing, all 4 non-supersede rejection reasons exercised |
 | Docker Desktop + WSL2 + Airflow | ✅ Installed and running — `trade_etl_pipeline` DAG executed end-to-end in Docker (generate → load → dbt run → dbt test → mark expired, all tasks succeeded) |
-| Streamlit dashboard | ✅ Run locally against live Snowflake data |
+| Streamlit dashboard | ✅ Redesigned and run locally against live Snowflake data |
+| CI/CD: validate + deploy | ✅ `dbt_ci`/`terraform_ci` validate on every push/PR; deploy jobs (`dbt-deploy`, `terraform-apply`) run on merge to `main`, gated behind a `production` GitHub Environment requiring manual approval — 6 PRs merged this way, all green |
+| Live Snowflake Alert | ✅ `HIGH_REJECTION_RATE` alert + email notification integration, provisioned via Terraform, fired for real and email delivery confirmed |
 
 Every stage has been executed against the real pipeline, not just written and assumed
 correct — see [Validated so far](#validated-so-far) and
@@ -38,6 +40,8 @@ flowchart LR
         end
     end
 
+    TFC[("Terraform Cloud\n(remote state)")]
+
     subgraph SF["Snowflake trial account"]
         direction TB
         subgraph RAWS["RAW schema"]
@@ -52,12 +56,16 @@ flowchart LR
             Valid[("fct_valid_trades")]
             Rejected[("fct_rejected_trades")]
         end
+        Alert{{"HIGH_REJECTION_RATE\nSnowflake Alert"}}
     end
+
+    Inbox(["email inbox"])
 
     subgraph GH["GitHub"]
         direction TB
         Repo["Repo: code + dbt + terraform"]
         CI["Actions: dbt_ci / terraform_ci / python_ci"]
+        Env(["production Environment\n(manual approval)"])
     end
 
     Gen --> Load
@@ -71,11 +79,17 @@ flowchart LR
     StgView --> Classify
     Classify -- "VALID_CURRENT" --> Valid
     Classify -- "REJECTED_*" --> Rejected
+    Rejected -. "60min schedule" .-> Alert
+    Alert -- "SYSTEM$SEND_EMAIL" --> Inbox
+    Web -. "email_on_failure" .-> Inbox
     Dash --> Valid
     Dash --> Rejected
+    TF -- "state" --> TFC
     TF -- provisions --> SF
     Repo --> CI
-    CI -- "dbt build / terraform plan" --> SF
+    CI -- "validate: dbt build / terraform plan" --> SF
+    CI -- "deploy, gated" --> Env
+    Env -- "terraform apply / dbt run --target dev" --> SF
 ```
 
 Full write-up (failure handling, Snowflake monitoring/alerts, 10,000x scaling):
@@ -85,10 +99,12 @@ Full write-up (failure handling, Snowflake monitoring/alerts, 10,000x scaling):
 ## Quick start
 
 Full walkthrough: [docs/setup_guide.md](docs/setup_guide.md). Short version, once you
-have a Snowflake trial account and tools installed:
+have a Snowflake trial account, a free Terraform Cloud account for remote state
+(`terraform login` or a token in `%APPDATA%\terraform.d\credentials.tfrc.json` - see
+setup guide §3), and tools installed:
 
 ```powershell
-cd terraform && terraform init && terraform apply         # provision warehouse/db/schema/stage/role
+cd terraform && terraform init && terraform apply         # provision warehouse/db/schema/stage/role/alert
 cd ..
 copy .env.example .env                                    # fill in Snowflake creds
 copy dbt_trades\profiles.yml.example dbt_trades\profiles.yml
@@ -106,7 +122,7 @@ cd .. && streamlit run dashboard\streamlit_app.py
 |---|---|
 | [`ingestion/`](ingestion/) | Simulated trade generator + the Snowflake-native loader (`PUT` + `COPY INTO`) |
 | [`dbt_trades/`](dbt_trades/) | dbt project: `staging` → `int_trade_classification` → `fct_valid_trades` / `fct_rejected_trades`. Start reading at [docs/validation_logic.md](docs/validation_logic.md) |
-| [`terraform/`](terraform/) | Snowflake infra as code — warehouse, database, `RAW` schema, stage, role + grants |
+| [`terraform/`](terraform/) | Snowflake infra as code — warehouse, database, `RAW` schema, stage, role + grants, monitoring alert; remote state in Terraform Cloud |
 | [`orchestration/airflow/`](orchestration/airflow/) | The DAG (`dags/trade_etl_dag.py`) plus a Docker Compose stack to run it |
 | [`dashboard/`](dashboard/) | Streamlit trade-status dashboard (`streamlit_app.py`) |
 | [`docs/`](docs/) | Architecture, setup guide, validation-logic writeup, PlantUML diagram source |
@@ -125,8 +141,9 @@ All six live in one place: [`dbt_trades/models/marts/int_trade_classification.sq
 
 ## Tech stack
 
-Snowflake (ingestion + storage) · dbt Core (`dbt-snowflake`) · Apache Airflow (Docker) ·
-Terraform (`Snowflake-Labs/snowflake` provider) · Streamlit · GitHub Actions
+Snowflake (ingestion + storage + native Alerts) · dbt Core (`dbt-snowflake`) ·
+Apache Airflow (Docker) · Terraform (`Snowflake-Labs/snowflake` provider, remote state in
+Terraform Cloud) · Streamlit · GitHub Actions (validate + approval-gated deploy)
 
 ## Validated so far
 
@@ -134,21 +151,30 @@ Every layer has been run for real against a live Snowflake trial account, not ju
 written and assumed correct:
 
 - `terraform apply` — provisioned `TRADE_ETL_WH`, `TRADE_ETL_DB`, `RAW`/`STAGING`/`MARTS`
-  schemas, role and grants; `terraform plan` shows zero drift
+  schemas, role and grants, and the `HIGH_REJECTION_RATE` monitoring alert; `terraform
+  plan` shows zero drift against remote state in Terraform Cloud
 - `ingestion/generate_trades.py` + `load_to_snowflake.py` — run repeatedly, staged and
-  `COPY INTO`-loaded real trade batches into `RAW.RAW_TRADES`
+  `COPY INTO`-loaded real trade batches into `RAW.RAW_TRADES`, including deliberately
+  invalid notional/currency values so every rejection rule gets real coverage
 - `dbt run` + `dbt test` — run against live data, 13/13 tests passing; see
   [docs/validation_logic.md](docs/validation_logic.md#verified-against-a-live-warehouse)
-  for the rule-by-rule breakdown, including two hand-crafted trades used to isolate
-  rules 3 and 4 individually
+  for the rule-by-rule breakdown
 - `orchestration/airflow/` — full Docker Compose stack (Postgres, webserver, scheduler)
   brought up, `trade_etl_pipeline` DAG unpaused and triggered; every task
   (`generate_trades` → `load_to_snowflake` → `dbt_run` → `dbt_test` →
   `mark_expired_trades`) succeeded end-to-end
-- `dashboard/streamlit_app.py` — run locally against live `fct_valid_trades` /
+- `dashboard/streamlit_app.py` — redesigned and run against live `fct_valid_trades` /
   `fct_rejected_trades` data
+- **CI/CD deploy, not just validate**: `terraform-apply` and `dbt-deploy` jobs run on
+  merge to `main`, gated behind a `production` GitHub Environment's required-reviewer
+  approval — 6 PRs merged through this exact flow, all green
+- **Live Snowflake Alert, not just documented**: generated real trade batches until
+  rejections crossed the alert's threshold, fired it, and confirmed both the
+  `ALERT_HISTORY` state (`TRIGGERED`) and actual email delivery
 - `ruff check` — clean across `ingestion/`, `dashboard/`, `orchestration/`
-- A real bug (rule 3 anchoring on `current_date()` instead of `loaded_at::date`, which
-  would have retroactively un-accepted already-valid trades) was caught by this live
-  testing, not by inspection, and fixed — see
-  [docs/validation_logic.md](docs/validation_logic.md) for the full story
+- Several real bugs were caught only by live testing, not by inspection — a dbt/Airflow
+  version-skew crash, a GitHub Actions workflow that silently never parsed, a Terraform
+  state split between local and CI that caused a live role grant to be briefly revoked,
+  and an untested rejection rule that could structurally never fire. See
+  [docs/validation_logic.md](docs/validation_logic.md) and
+  [docs/architecture.md](docs/architecture.md) for the details

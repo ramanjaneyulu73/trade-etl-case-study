@@ -64,15 +64,19 @@ a User API token (User Settings → Tokens) and either run `terraform login` or 
 ```powershell
 cd terraform
 copy terraform.tfvars.example terraform.tfvars
-notepad terraform.tfvars   # fill in your account id, trial username/password
+notepad terraform.tfvars   # fill in your account id, trial username/password, alert_email
 terraform init
 terraform plan
 terraform apply
 ```
 
 This creates the `TRADE_ETL_WH` warehouse, `TRADE_ETL_DB` database, `RAW` schema,
-`RAW_TRADES` landing table, `RAW_TRADES_STAGE` internal stage, and a `TRADE_ETL_ROLE`
-granted to your trial user.
+`RAW_TRADES` landing table, `RAW_TRADES_STAGE` internal stage, a `TRADE_ETL_ROLE` granted
+to your trial user, and the `HIGH_REJECTION_RATE` Snowflake Alert + email notification
+integration (`terraform/monitoring.tf`) that emails `alert_email` if `fct_rejected_trades`
+gains more than 10 rows in a 60-minute window - note this step only fully succeeds once
+`dbt run` (step 5) has created `MARTS.FCT_REJECTED_TRADES` at least once, since the
+alert's condition query reads that table.
 
 ## 4. Configure local credentials
 
@@ -149,7 +153,29 @@ git push -u origin main
 
 Then in the repo's **Settings → Secrets and variables → Actions**, add:
 `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD`, `SNOWFLAKE_ROLE`,
-`SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`. The `dbt_ci` and `terraform_ci` workflows
-run schema-safe checks (`dbt parse`, `terraform validate`) unconditionally, and only run
-the credentialed `dbt build --target ci` / `terraform plan` steps once those secrets are
+`SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `TF_API_TOKEN` (the Terraform Cloud token
+from step 3), and `ALERT_EMAIL`. The `dbt_ci` and `terraform_ci` workflows run
+schema-safe checks (`dbt parse`, `terraform validate`) unconditionally, and only run the
+credentialed `dbt build --target ci` / `terraform plan` steps once those secrets are
 present.
+
+### Set up the `production` environment (required for CI/CD deploy)
+
+`dbt_ci.yml`/`terraform_ci.yml` don't just validate - `dbt-deploy` and `terraform-apply`
+jobs run on every push to `main`, applying real changes to the live Snowflake account.
+Without a protected environment, they'd run unattended the moment secrets are present.
+In **Settings → Environments**:
+
+1. **New environment**, name it `production`
+2. Under **Deployment protection rules**, check **Required reviewers** and add yourself
+3. Under **Deployment branches and tags**, since `main` almost certainly isn't a
+   [protected branch](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches)
+   in a fresh repo, pick **Selected branches and tags** (not "Protected branches only" -
+   that would block every deploy since no branch would match) and add a rule: ref type
+   `Branch`, name pattern `main`
+4. Leave **Allow administrators to bypass configured protection rules** unchecked -
+   otherwise the approval step is trivially skippable and the gate is decorative
+
+Once this exists, every push to `main` that touches `dbt_trades/**` or `terraform/**`
+triggers a deploy job that pauses under **Actions → (the run) → Review pending
+deployments** until you click **Approve and deploy**.

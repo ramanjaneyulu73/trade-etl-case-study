@@ -84,6 +84,44 @@ pattern, just querying `ACCOUNT_USAGE` instead of our own MARTS tables — not i
 here since those views carry up to a few hours of latency, which would make them awkward
 to demo live.
 
+## CI/CD hardening: what live deployment actually surfaced
+
+The CI/CD pipeline validates on every push/PR and deploys (`terraform-apply`,
+`dbt-deploy`) on merge to `main`, gated behind a `production` GitHub Environment's
+required-reviewer approval. Building that out live surfaced four real problems that
+`terraform validate`/`dbt parse`/reading the code never would have:
+
+- **A GitHub Actions workflow that had never actually parsed.** `terraform_ci.yml`
+  referenced `secrets.SNOWFLAKE_ACCOUNT` directly inside a step's `if:` condition.
+  GitHub Actions rejects the *entire workflow file* for this ("Unrecognized named-value:
+  'secrets'") - it doesn't fail a job, it fails to register the workflow at all (0 jobs,
+  the displayed name falls back to the file path). Fixed by assigning the secret to a
+  job-level `env:` var first and checking `env.X` in `if:`.
+- **No shared state between local and CI.** Local Terraform state was a gitignored
+  file; CI ran `terraform init -backend=false`, so `terraform-apply` had zero knowledge
+  of what was already provisioned and tried to recreate all 10 resources from scratch
+  (failed cleanly on "already exists" - no corruption, but also no working deploy).
+  Fixed with a Terraform Cloud remote backend shared by both.
+- **A live incident, caught by the very gate built to catch it.** After fixing shared
+  state, the next `terraform-apply` run *did* execute a destructive change: it saw
+  `service_user_name` as lowercase (from a GitHub secret sourced from a lowercase
+  `.env` value) against uppercase in state (from the `.tfvars` used for the original
+  local apply), read that as a real diff, and replaced the role grant - destroy
+  succeeded, recreate failed on a case-sensitive lookup, briefly leaving the live
+  service user without its role. Restored via direct SQL within minutes, then fixed at
+  the source: `user_name = upper(var.service_user_name)` in `main.tf`, so the plan is
+  stable regardless of any credential source's casing. This is exactly why the deploy
+  jobs pause for manual approval instead of auto-applying - the approval gate doesn't
+  prevent every mistake, but it's the reason this one was caught before compounding.
+- **A grant missed between two admin roles.** The `HIGH_REJECTION_RATE` alert's email
+  notification integration was created as `ACCOUNTADMIN` (required - creating
+  integrations is account-level territory), which doesn't grant any other role access
+  to it. The alert (owned by `TRADE_ETL_ROLE`, so it can read `MARTS.FCT_REJECTED_TRADES`)
+  correctly evaluated its condition against real data but failed the action step with
+  "not authorized" until `TRADE_ETL_ROLE` was explicitly granted `USAGE` on the
+  integration. Confirmed fixed by re-firing the alert and checking `ALERT_HISTORY` for
+  `TRIGGERED` with `sql_error_code 0`.
+
 ## Scalability: what changes at 10,000x volume
 
 The current design intentionally does a full recompute of `int_trade_classification`
