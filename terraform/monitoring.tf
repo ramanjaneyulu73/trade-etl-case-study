@@ -27,6 +27,20 @@ resource "snowflake_email_notification_integration" "trade_etl_alerts" {
   comment            = "Notifies on trade ETL data-quality alerts (rejection-rate spikes)."
 }
 
+# Creating the integration as ACCOUNTADMIN doesn't grant any other role
+# access to it - confirmed live: the alert's action failed with "Integration
+# ... does not exist or not authorized" against TRADE_ETL_ROLE (the role that
+# actually runs it) until this grant was added.
+resource "snowflake_grant_privileges_to_account_role" "integration_usage" {
+  provider          = snowflake.securityadmin
+  account_role_name = snowflake_account_role.trade_etl_role.name
+  privileges        = ["USAGE"]
+  on_account_object {
+    object_type = "INTEGRATION"
+    object_name = snowflake_email_notification_integration.trade_etl_alerts.name
+  }
+}
+
 resource "snowflake_alert" "high_rejection_rate" {
   provider  = snowflake.trade_etl_role
   database  = snowflake_database.trade_etl_db.name
@@ -55,5 +69,8 @@ resource "snowflake_alert" "high_rejection_rate" {
     interval = 60
   }
 
-  depends_on = [snowflake_grant_privileges_to_account_role.execute_alert]
+  depends_on = [
+    snowflake_grant_privileges_to_account_role.execute_alert,
+    snowflake_grant_privileges_to_account_role.integration_usage,
+  ]
 }
