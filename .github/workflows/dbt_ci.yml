@@ -9,6 +9,7 @@ on:
     branches: [main]
     paths:
       - "dbt_trades/**"
+      - ".github/workflows/dbt_ci.yml"
 
 jobs:
   dbt-build:
@@ -46,4 +47,44 @@ jobs:
       - name: dbt build against CI schema
         if: ${{ env.SNOWFLAKE_ACCOUNT != '' }}
         run: dbt build --target ci
+        working-directory: dbt_trades
+
+  # Deploy: only on a real merge to main (never on pull_request), and gated
+  # behind the "production" GitHub Environment's required reviewer - dbt
+  # models only rebuild against the live MARTS/STAGING schemas after a human
+  # clicks Approve, not automatically.
+  dbt-deploy:
+    needs: dbt-build
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+      SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+      SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+      SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+      DBT_PROFILES_DIR: ${{ github.workspace }}/dbt_trades
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dbt
+        run: pip install dbt-core dbt-snowflake
+
+      - name: Copy profile
+        run: cp dbt_trades/profiles.yml.example dbt_trades/profiles.yml
+
+      - name: dbt build against live schema (deploy)
+        if: ${{ env.SNOWFLAKE_ACCOUNT != '' }}
+        run: dbt build --target dev
+        working-directory: dbt_trades
+
+      - name: mark expired trades
+        if: ${{ env.SNOWFLAKE_ACCOUNT != '' }}
+        run: dbt run-operation mark_expired_trades --target dev
         working-directory: dbt_trades

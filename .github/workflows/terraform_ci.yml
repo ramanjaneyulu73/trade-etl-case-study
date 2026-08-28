@@ -46,3 +46,38 @@ jobs:
           TF_VAR_snowflake_admin_user: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_snowflake_admin_password: ${{ secrets.SNOWFLAKE_PASSWORD }}
           TF_VAR_service_user_name: ${{ secrets.SNOWFLAKE_USER }}
+
+  # Deploy: only on a real merge to main (never on pull_request), and gated
+  # behind the "production" GitHub Environment's required reviewer - infra
+  # changes only go live after a human clicks Approve, not automatically.
+  terraform-apply:
+    needs: terraform
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: terraform
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: terraform init
+        run: terraform init -backend=false
+
+      - name: terraform apply (deploy)
+        if: ${{ env.SNOWFLAKE_ACCOUNT != '' }}
+        run: |
+          export TF_VAR_snowflake_organization_name="${SNOWFLAKE_ACCOUNT_FULL%%-*}"
+          export TF_VAR_snowflake_account_name="${SNOWFLAKE_ACCOUNT_FULL#*-}"
+          terraform apply -auto-approve -no-color
+        env:
+          SNOWFLAKE_ACCOUNT_FULL: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          TF_VAR_snowflake_admin_user: ${{ secrets.SNOWFLAKE_USER }}
+          TF_VAR_snowflake_admin_password: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          TF_VAR_service_user_name: ${{ secrets.SNOWFLAKE_USER }}
