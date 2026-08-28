@@ -74,6 +74,16 @@ Slack/PagerDuty). This is complementary to, not a replacement for, Airflow's
 `email_on_failure`: Airflow tells you the *job* failed; Snowflake alerts tell you the
 *data* looks wrong even when every job succeeded.
 
+**Implemented, not just proposed**: `terraform/monitoring.tf` provisions a live
+`HIGH_REJECTION_RATE` Snowflake Alert (via the `snowflake_alert` and
+`snowflake_email_notification_integration` resources) that runs the rejection-rate-spike
+condition above on a 60-minute schedule and emails via `SYSTEM$SEND_EMAIL` when
+`fct_rejected_trades` gains more than 10 rows in that window. The
+`QUERY_HISTORY`/`WAREHOUSE_METERING_HISTORY`-based alerts above follow the identical
+pattern, just querying `ACCOUNT_USAGE` instead of our own MARTS tables — not implemented
+here since those views carry up to a few hours of latency, which would make them awkward
+to demo live.
+
 ## Scalability: what changes at 10,000x volume
 
 The current design intentionally does a full recompute of `int_trade_classification`

@@ -47,6 +47,7 @@ jobs:
           TF_VAR_snowflake_admin_user: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_snowflake_admin_password: ${{ secrets.SNOWFLAKE_PASSWORD }}
           TF_VAR_service_user_name: ${{ secrets.SNOWFLAKE_USER }}
+          TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
 
   # Deploy: only on a real merge to main (never on pull_request), and gated
   # behind the "production" GitHub Environment's required reviewer - infra
@@ -83,3 +84,4 @@ jobs:
           TF_VAR_snowflake_admin_user: ${{ secrets.SNOWFLAKE_USER }}
           TF_VAR_snowflake_admin_password: ${{ secrets.SNOWFLAKE_PASSWORD }}
           TF_VAR_service_user_name: ${{ secrets.SNOWFLAKE_USER }}
+          TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
