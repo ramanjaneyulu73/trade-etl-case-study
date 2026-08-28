@@ -55,7 +55,13 @@ resource "snowflake_account_role" "trade_etl_role" {
 resource "snowflake_grant_account_role" "trade_etl_role_to_user" {
   provider  = snowflake.securityadmin
   role_name = snowflake_account_role.trade_etl_role.name
-  user_name = var.service_user_name
+  # Snowflake stores unquoted identifiers uppercase; normalizing here means
+  # this resource's plan is stable no matter how service_user_name happens to
+  # be cased in whatever credential source feeds it (tfvars locally vs. a
+  # GitHub secret in CI) - a lowercase secret once caused Terraform to see a
+  # diff against the (correctly uppercase) existing grant and try to replace
+  # it, briefly revoking the role from the live service user.
+  user_name = upper(var.service_user_name)
 }
 
 resource "snowflake_grant_privileges_to_account_role" "wh_usage" {
