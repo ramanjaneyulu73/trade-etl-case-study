@@ -8,13 +8,18 @@ separately, and orchestrates the whole thing with Airflow.
 
 | Area | State |
 |---|---|
-| Code: ingestion, dbt project, Terraform, Airflow DAG, dashboard, CI | ✅ Complete, reviewed, and locally validated (see [Validated so far](#validated-so-far)) |
-| Snowflake trial account | ⏳ Pending — needs a human to sign up in a browser, see [setup guide §1](docs/setup_guide.md#1-create-a-free-snowflake-trial-account) |
-| `terraform apply` / `dbt run` against a live warehouse | ⏳ Pending on the above |
-| Docker Desktop + WSL2 (for the Airflow container) | ⏳ Pending — needs an elevated terminal + reboot, see [setup guide §2](docs/setup_guide.md#docker-desktop--wsl2-needs-your-action--requires-admin--a-reboot) |
+| Code: ingestion, dbt project, Terraform, Airflow DAG, dashboard, CI | ✅ Complete, reviewed, and validated end-to-end (see [Validated so far](#validated-so-far)) |
+| Snowflake trial account | ✅ Live (AWS Singapore) |
+| `terraform apply` | ✅ Applied — warehouse/database/schemas/role/grants live, zero drift |
+| `dbt run` / `dbt test` against the live warehouse | ✅ Run repeatedly against real data, 13/13 tests passing |
+| Docker Desktop + WSL2 + Airflow | ✅ Installed and running — `trade_etl_pipeline` DAG executed end-to-end in Docker (generate → load → dbt run → dbt test → mark expired, all tasks succeeded) |
+| Streamlit dashboard | ✅ Run locally against live Snowflake data |
 
-Nothing in the pipeline has run against a real Snowflake warehouse yet — everything
-below is validated as far as it can be without one (see below).
+Every stage has been executed against the real pipeline, not just written and assumed
+correct — see [Validated so far](#validated-so-far) and
+[docs/validation_logic.md](docs/validation_logic.md#verified-against-a-live-warehouse)
+for specifics, including a real bug (rule 3's date anchor) that live testing caught and
+a fix later confirmed.
 
 ## Architecture
 
@@ -125,18 +130,25 @@ Terraform (`Snowflake-Labs/snowflake` provider) · Streamlit · GitHub Actions
 
 ## Validated so far
 
-Everything that doesn't require a live Snowflake connection has been run, not just
-written:
+Every layer has been run for real against a live Snowflake trial account, not just
+written and assumed correct:
 
-- `ingestion/generate_trades.py` — executed, produces well-formed trade batches
+- `terraform apply` — provisioned `TRADE_ETL_WH`, `TRADE_ETL_DB`, `RAW`/`STAGING`/`MARTS`
+  schemas, role and grants; `terraform plan` shows zero drift
+- `ingestion/generate_trades.py` + `load_to_snowflake.py` — run repeatedly, staged and
+  `COPY INTO`-loaded real trade batches into `RAW.RAW_TRADES`
+- `dbt run` + `dbt test` — run against live data, 13/13 tests passing; see
+  [docs/validation_logic.md](docs/validation_logic.md#verified-against-a-live-warehouse)
+  for the rule-by-rule breakdown, including two hand-crafted trades used to isolate
+  rules 3 and 4 individually
+- `orchestration/airflow/` — full Docker Compose stack (Postgres, webserver, scheduler)
+  brought up, `trade_etl_pipeline` DAG unpaused and triggered; every task
+  (`generate_trades` → `load_to_snowflake` → `dbt_run` → `dbt_test` →
+  `mark_expired_trades`) succeeded end-to-end
+- `dashboard/streamlit_app.py` — run locally against live `fct_valid_trades` /
+  `fct_rejected_trades` data
 - `ruff check` — clean across `ingestion/`, `dashboard/`, `orchestration/`
-- `dbt parse` — the full dbt project (4 models, 13 data tests, 1 macro, 1 source)
-  parses cleanly with no warnings
-- `terraform fmt` / `terraform init` / `terraform validate` — clean, validated against
-  the actual installed `Snowflake-Labs/snowflake` v0.100.0 provider schema (not just
-  written from memory — several resource names had changed since the provider's older
-  docs, e.g. `snowflake_role` → `snowflake_account_role`, the `*_grant` resources →
-  `snowflake_grant_privileges_to_account_role`)
-
-Not yet possible without a live warehouse: `dbt run`/`dbt test`/`dbt build`,
-`terraform apply`, the Airflow DAG end-to-end, and the dashboard against real data.
+- A real bug (rule 3 anchoring on `current_date()` instead of `loaded_at::date`, which
+  would have retroactively un-accepted already-valid trades) was caught by this live
+  testing, not by inspection, and fixed — see
+  [docs/validation_logic.md](docs/validation_logic.md) for the full story

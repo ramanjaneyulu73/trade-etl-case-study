@@ -11,15 +11,14 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - VALID_CURRENT
-                  - REJECTED_LOWER_VERSION
-                  - SUPERSEDED_SAME_VERSION
-                  - REJECTED_PAST_MATURITY
-                  - REJECTED_INVALID_NOTIONAL
-                  - REJECTED_INVALID_CURRENCY
-                  - REJECTED_INVALID_DATES
+              values:
+                - VALID_CURRENT
+                - REJECTED_LOWER_VERSION
+                - SUPERSEDED_SAME_VERSION
+                - REJECTED_PAST_MATURITY
+                - REJECTED_INVALID_NOTIONAL
+                - REJECTED_INVALID_CURRENCY
+                - REJECTED_INVALID_DATES
 
   - name: fct_valid_trades
     description: Current state, one row per trade_id, of every trade that has passed validation.
@@ -32,8 +31,7 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values: ['ACTIVE', 'EXPIRED']
+              values: ['ACTIVE', 'EXPIRED']
 
   - name: fct_rejected_trades
     description: Append-only compliance audit log of every rejected trade message.

@@ -19,8 +19,6 @@ browser and can't be scripted:
 
 ## 2. Install tooling
 
-Already scripted/installed by this session where possible:
-
 | Tool | Status | Notes |
 |---|---|---|
 | Python 3.11 | ✅ already present | |
@@ -28,27 +26,18 @@ Already scripted/installed by this session where possible:
 | `gh` CLI | ✅ installed via `winget install GitHub.cli` | run `gh auth login` once |
 | Terraform | ✅ installed via `winget install Hashicorp.Terraform` | |
 | `dbt-core` + `dbt-snowflake` | ✅ installed via `pip install --user` | |
-| Docker Desktop + WSL2 | ⚠️ needs an elevated terminal + reboot — see below | required for Airflow |
+| Docker Desktop + WSL2 | ✅ installed (`wsl --install`, `winget install -e --id Docker.DockerDesktop`) | required for Airflow; on RAM-constrained machines close other apps first, see note below |
 
-### Docker Desktop / WSL2 (needs your action — requires admin + a reboot)
+### Docker Desktop / WSL2
 
-This machine doesn't have WSL2 installed, and enabling it needs administrator rights,
-which this session doesn't have. In an **elevated PowerShell** (right-click → Run as
-Administrator):
+Requires WSL2 (`wsl --install`, needs an elevated terminal + a reboot) and Docker
+Desktop (`winget install -e --id Docker.DockerDesktop`, also needs admin). Launch Docker
+Desktop once, skip the optional Docker Hub sign-in, and confirm it's running with
+`docker ps` in a normal (non-admin) terminal.
 
-```powershell
-wsl --install
-# reboot when prompted
-```
-
-After reboot, install Docker Desktop (also needs admin):
-
-```powershell
-winget install -e --id Docker.DockerDesktop
-```
-
-Launch Docker Desktop once, accept the WSL2 backend prompt if asked, and confirm it's
-running with `docker ps` in a normal (non-admin) terminal.
+On a RAM-constrained machine, Docker Desktop's WSL2 VM plus the Airflow stack (Postgres +
+webserver + scheduler) can use 2+ GB once running — close other memory-heavy apps (browsers,
+IDEs) first if `docker compose up` or the containers themselves seem to hang.
 
 You don't need Docker for anything except the Airflow orchestration piece — ingestion,
 dbt, Terraform, and the Streamlit dashboard all run directly on Windows with no
