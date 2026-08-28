@@ -88,6 +88,14 @@ written and assumed correct:
 - That same live test is what surfaced the `current_date()` vs `loaded_at::date` bug
   described above — the original `current_date()` version worked for a same-day test but
   would have silently misbehaved for any trade whose maturity passed after acceptance.
+- **`REJECTED_INVALID_NOTIONAL` and `REJECTED_INVALID_CURRENCY` had never fired either** —
+  not because they were hard to trigger, but because `generate_trades.py` always produced
+  a positive notional and always drew currency from the valid list, so neither rule could
+  structurally ever be exercised by any data the generator produced. Found while reviewing
+  why the dashboard's rejection-reasons chart only ever showed two bars. Fixed the
+  generator to produce a small share of non-positive-notional and unsupported-currency
+  trades; confirmed live that both reasons now appear in `fct_rejected_trades` and `dbt
+  test` is still 13/13.
 
 ## Why this tech stack
 
