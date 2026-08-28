@@ -18,13 +18,17 @@ fake = Faker()
 
 INSTRUMENT_TYPES = ["FX_FORWARD", "IRS", "BOND", "EQUITY_SWAP", "CDS"]
 CURRENCIES = ["USD", "EUR", "GBP", "JPY", "INR", "AUD", "CHF"]
+# Currencies a booking system might send that this pipeline doesn't support -
+# real-looking codes, just not on the allow-list, to exercise
+# REJECTED_INVALID_CURRENCY (dbt_project.yml's valid_currencies).
+UNSUPPORTED_CURRENCIES = ["CNY", "BRL", "ZAR", "MXN"]
 STATUSES = ["NEW", "AMENDED"]
 SOURCE_SYSTEMS = ["MURK", "CALYPSO", "SUMMIT", "INTERNAL_BLOTTER"]
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "incoming"
 
 
-def random_trade(trade_id=None, version=1, maturity_offset_days=None):
+def random_trade(trade_id=None, version=1, maturity_offset_days=None, notional=None, currency=None):
     trade_date = datetime.now(timezone.utc).date() - timedelta(days=random.randint(0, 5))
     if maturity_offset_days is None:
         maturity_offset_days = random.randint(30, 1825)
@@ -36,8 +40,8 @@ def random_trade(trade_id=None, version=1, maturity_offset_days=None):
         "maturity_date": maturity_date.isoformat(),
         "counterparty": fake.company(),
         "instrument_type": random.choice(INSTRUMENT_TYPES),
-        "notional": round(random.uniform(10_000, 50_000_000), 2),
-        "currency": random.choice(CURRENCIES),
+        "notional": notional if notional is not None else round(random.uniform(10_000, 50_000_000), 2),
+        "currency": currency or random.choice(CURRENCIES),
         "price": round(random.uniform(0.5, 150.0), 4),
         "status": random.choice(STATUSES) if version == 1 else "AMENDED",
         "source_system": random.choice(SOURCE_SYSTEMS),
@@ -45,7 +49,10 @@ def random_trade(trade_id=None, version=1, maturity_offset_days=None):
     }
 
 
-def build_batch(n_new, n_amend_higher, n_amend_same, n_amend_stale, n_matured, existing_trade_ids):
+def build_batch(
+    n_new, n_amend_higher, n_amend_same, n_amend_stale, n_matured,
+    n_bad_notional, n_bad_currency, existing_trade_ids,
+):
     batch = []
 
     for _ in range(n_new):
@@ -81,6 +88,14 @@ def build_batch(n_new, n_amend_higher, n_amend_same, n_amend_stale, n_matured, e
         t = random_trade(maturity_offset_days=-random.randint(1, 90))
         batch.append(t)
 
+    for _ in range(n_bad_notional):
+        t = random_trade(notional=round(random.uniform(-50_000, 0), 2))
+        batch.append(t)
+
+    for _ in range(n_bad_currency):
+        t = random_trade(currency=random.choice(UNSUPPORTED_CURRENCIES))
+        batch.append(t)
+
     random.shuffle(batch)
     return batch
 
@@ -102,9 +117,16 @@ def main():
     n_amend_stale = max(1, int(total * 0.03))
     n_amend_same = max(1, int(total * 0.05))
     n_amend_higher = max(1, int(total * 0.15))
-    n_new = total - (n_matured + n_amend_stale + n_amend_same + n_amend_higher)
+    n_bad_notional = max(1, int(total * 0.02))
+    n_bad_currency = max(1, int(total * 0.02))
+    n_new = total - (
+        n_matured + n_amend_stale + n_amend_same + n_amend_higher + n_bad_notional + n_bad_currency
+    )
 
-    batch = build_batch(n_new, n_amend_higher, n_amend_same, n_amend_stale, n_matured, existing_trade_ids=[])
+    batch = build_batch(
+        n_new, n_amend_higher, n_amend_same, n_amend_stale, n_matured,
+        n_bad_notional, n_bad_currency, existing_trade_ids=[],
+    )
 
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%f")
     out_path = DATA_DIR / f"trades_{run_id}.jsonl"
