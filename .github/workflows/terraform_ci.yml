@@ -16,6 +16,8 @@ jobs:
     defaults:
       run:
         working-directory: terraform
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -33,7 +35,7 @@ jobs:
         run: terraform validate
 
       - name: terraform plan
-        if: ${{ secrets.SNOWFLAKE_ACCOUNT != '' }}
+        if: ${{ env.SNOWFLAKE_ACCOUNT != '' }}
         run: |
           export TF_VAR_snowflake_organization_name="${SNOWFLAKE_ACCOUNT_FULL%%-*}"
           export TF_VAR_snowflake_account_name="${SNOWFLAKE_ACCOUNT_FULL#*-}"
