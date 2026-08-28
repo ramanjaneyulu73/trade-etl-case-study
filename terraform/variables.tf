@@ -48,3 +48,8 @@ variable "raw_stage_name" {
   type    = string
   default = "RAW_TRADES_STAGE"
 }
+
+variable "alert_email" {
+  description = "Email address the HIGH_REJECTION_RATE Snowflake Alert notifies via SYSTEM$SEND_EMAIL. Must be a verified email for a user in this account (Snowflake restricts SYSTEM$SEND_EMAIL to account users, not arbitrary addresses)."
+  type        = string
+}
