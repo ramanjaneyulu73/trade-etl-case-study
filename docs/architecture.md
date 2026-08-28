@@ -84,6 +84,49 @@ pattern, just querying `ACCOUNT_USAGE` instead of our own MARTS tables — not i
 here since those views carry up to a few hours of latency, which would make them awkward
 to demo live.
 
+## CI/CD and monitoring architecture
+
+Kept as a separate diagram from the [core data flow](../README.md#architecture) —
+cramming validate, approval-gated deploy, remote state, and both alerting paths into one
+diagram made it hard to trace even though every piece is small on its own. PlantUML
+source: [diagrams/cicd_monitoring.puml](diagrams/cicd_monitoring.puml).
+
+```mermaid
+flowchart LR
+    subgraph GH["GitHub"]
+        direction TB
+        Repo["Repo: code + dbt + terraform"]
+        CI["Actions: dbt_ci / terraform_ci"]
+        Env(["production Environment\n(required reviewer)"])
+    end
+
+    TFC[("Terraform Cloud\n(remote state)")]
+    TF["Terraform CLI\n(local or CI runner)"]
+
+    subgraph SF["Snowflake trial account"]
+        Rejected[("fct_rejected_trades")]
+        Alert{{"HIGH_REJECTION_RATE\nAlert"}}
+        Integration["TRADE_ETL_ALERT_EMAIL\nintegration"]
+    end
+
+    Web["Airflow Webserver"]
+    Inbox(["email inbox"])
+
+    Repo --> CI
+    CI -- "validate: dbt build / terraform plan" --> SF
+    CI -- "merge to main" --> Env
+    Env -- "approved: terraform apply /\ndbt run --target dev" --> SF
+    TF -- "shared state" --> TFC
+    Rejected -. "60min schedule" .-> Alert
+    Alert -- "action, if >10/hour" --> Integration
+    Integration -- "SYSTEM$SEND_EMAIL" --> Inbox
+    Web -. "email_on_failure" .-> Inbox
+```
+
+The `production` Environment gate is not hypothetical caution — a real incident (the
+case-mismatch bug below that briefly revoked a live role grant) was caught exactly here,
+before it could compound.
+
 ## CI/CD hardening: what live deployment actually surfaced
 
 The CI/CD pipeline validates on every push/PR and deploys (`terraform-apply`,

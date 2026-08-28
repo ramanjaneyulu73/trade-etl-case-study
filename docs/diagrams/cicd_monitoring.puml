@@ -1,0 +1,52 @@
+@startuml cicd_monitoring
+title Trade ETL Pipeline - CI/CD Deploy Gate & Monitoring
+
+skinparam componentStyle rectangle
+
+package "GitHub" {
+  [Repo: code + dbt + terraform] as Repo
+  [Actions: dbt_ci / terraform_ci] as CI
+  [production Environment\n(required reviewer)] as Env
+}
+
+cloud "Terraform Cloud" {
+  [Remote state\n(CLI-driven, execution: local)] as TFState
+}
+
+node "Local machine / CI runner" {
+  [Terraform CLI] as TF
+}
+
+cloud "Snowflake (Trial Account)" {
+  [fct_rejected_trades] as Rejected
+  [HIGH_REJECTION_RATE Alert] as Alert
+  [TRADE_ETL_ALERT_EMAIL\nnotification integration] as Integration
+}
+
+node "Docker: Apache Airflow" {
+  [Webserver] as Web
+}
+
+node "Email inbox" as Inbox
+
+Repo --> CI : push / PR
+CI --> "Snowflake (Trial Account)" : validate\n(dbt build / terraform plan)
+CI --> Env : merge to main\ntriggers deploy job
+Env --> "Snowflake (Trial Account)" : approved:\nterraform apply /\ndbt run --target dev
+TF --> TFState : shared state\n(local run or CI, same source of truth)
+Rejected ..> Alert : condition query,\n60-minute schedule
+Alert --> Integration : action, if\n>10 rejections/hour
+Integration --> Inbox : SYSTEM$SEND_EMAIL
+Web ..> Inbox : email_on_failure\n(Airflow task retries exhausted)
+
+note bottom of Env
+  Required reviewer, admin bypass disabled,
+  restricted to main branch. This gate is not
+  hypothetical caution - a real incident (a
+  case-mismatch bug briefly revoking a live
+  role grant) was caught here. See
+  docs/architecture.md's "CI/CD hardening"
+  section.
+end note
+
+@enduml
