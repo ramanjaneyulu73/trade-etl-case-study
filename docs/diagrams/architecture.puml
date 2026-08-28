@@ -1,5 +1,5 @@
 @startuml architecture
-title Trade ETL Pipeline - Architecture
+title Trade ETL Pipeline - Core Architecture
 
 skinparam componentStyle rectangle
 
@@ -13,10 +13,6 @@ package "Standalone Machine" {
     [Scheduler]
     [Webserver]
   }
-}
-
-cloud "Terraform Cloud" as TFC {
-  [Remote state] as TFState
 }
 
 cloud "Snowflake (Trial Account)" {
@@ -34,17 +30,12 @@ cloud "Snowflake (Trial Account)" {
       [fct_rejected_trades]
     }
   }
-  [Query History / Warehouse Metering\n(admin views)] as AdminViews
-  [HIGH_REJECTION_RATE Alert\n(terraform/monitoring.tf)] as Alert
 }
 
 package "GitHub" {
   [Repo: code + dbt + terraform] as Repo
   [Actions: dbt_ci / terraform_ci / python_ci] as CI
-  [production Environment\n(manual approval)] as Env
 }
-
-node "Email inbox" as Inbox
 
 Gen --> Load : writes .jsonl files
 Load --> Stage : PUT (stage file)
@@ -57,16 +48,16 @@ Dbt --> [stg_trades view]
 [stg_trades view] --> [int_trade_classification]
 [int_trade_classification] --> [fct_valid_trades] : disposition = VALID_CURRENT
 [int_trade_classification] --> [fct_rejected_trades] : disposition LIKE REJECTED_%
-[fct_rejected_trades] ..> Alert : 60-minute schedule
-Alert --> Inbox : SYSTEM$SEND_EMAIL
-Airflow ..> Inbox : email_on_failure
 Dash --> [fct_valid_trades] : queries
 Dash --> [fct_rejected_trades] : queries
-TF --> TFState : state (CLI-driven,\nexecution mode: local)
-TF --> "Snowflake (Trial Account)" : provisions DB/schema/\nwarehouse/role/stage/alert
+TF --> "Snowflake (Trial Account)" : provisions DB/schema/\nwarehouse/role/stage
 Repo --> CI : on push/PR
 CI --> "Snowflake (Trial Account)" : validate: dbt build /\nterraform plan (CI schema)
-CI --> Env : deploy, gated
-Env --> "Snowflake (Trial Account)" : terraform apply /\ndbt run --target dev
+
+note bottom of CI
+  CI/CD deploy (with an approval gate)
+  and monitoring/alerting have their
+  own diagram: cicd_monitoring.puml
+end note
 
 @enduml

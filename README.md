@@ -40,8 +40,6 @@ flowchart LR
         end
     end
 
-    TFC[("Terraform Cloud\n(remote state)")]
-
     subgraph SF["Snowflake trial account"]
         direction TB
         subgraph RAWS["RAW schema"]
@@ -56,16 +54,12 @@ flowchart LR
             Valid[("fct_valid_trades")]
             Rejected[("fct_rejected_trades")]
         end
-        Alert{{"HIGH_REJECTION_RATE\nSnowflake Alert"}}
     end
-
-    Inbox(["email inbox"])
 
     subgraph GH["GitHub"]
         direction TB
         Repo["Repo: code + dbt + terraform"]
         CI["Actions: dbt_ci / terraform_ci / python_ci"]
-        Env(["production Environment\n(manual approval)"])
     end
 
     Gen --> Load
@@ -79,22 +73,18 @@ flowchart LR
     StgView --> Classify
     Classify -- "VALID_CURRENT" --> Valid
     Classify -- "REJECTED_*" --> Rejected
-    Rejected -. "60min schedule" .-> Alert
-    Alert -- "SYSTEM$SEND_EMAIL" --> Inbox
-    Web -. "email_on_failure" .-> Inbox
     Dash --> Valid
     Dash --> Rejected
-    TF -- "state" --> TFC
     TF -- provisions --> SF
     Repo --> CI
-    CI -- "validate: dbt build / terraform plan" --> SF
-    CI -- "deploy, gated" --> Env
-    Env -- "terraform apply / dbt run --target dev" --> SF
+    CI -- "validate on every push/PR" --> SF
 ```
 
-Full write-up (failure handling, Snowflake monitoring/alerts, 10,000x scaling):
-[docs/architecture.md](docs/architecture.md). Diagram source (PlantUML):
-[docs/diagrams/architecture.puml](docs/diagrams/architecture.puml).
+This shows the core data flow. CI/CD deploy (with an approval gate) and monitoring/alerting
+are a separate concern with their own diagram, plus a full write-up covering failure
+handling, Snowflake monitoring/alerts, and 10,000x scaling — see
+[docs/architecture.md](docs/architecture.md#cicd-and-monitoring-architecture). PlantUML
+sources for both diagrams: [docs/diagrams/](docs/diagrams/).
 
 ## Quick start
 
