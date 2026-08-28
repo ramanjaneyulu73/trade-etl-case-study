@@ -51,15 +51,23 @@ def human_money(value: float) -> str:
     return f"${value:,.0f}"
 
 
+def get_secret(key: str) -> str:
+    """Local dev reads .env via os.environ; Streamlit Community Cloud has no
+    .env file and injects secrets into st.secrets instead."""
+    if key in os.environ:
+        return os.environ[key]
+    return st.secrets[key]
+
+
 @st.cache_resource
 def get_connection():
     return snowflake.connector.connect(
-        account=os.environ["SNOWFLAKE_ACCOUNT"],
-        user=os.environ["SNOWFLAKE_USER"],
-        password=os.environ["SNOWFLAKE_PASSWORD"],
-        role=os.environ["SNOWFLAKE_ROLE"],
-        warehouse=os.environ["SNOWFLAKE_WAREHOUSE"],
-        database=os.environ["SNOWFLAKE_DATABASE"],
+        account=get_secret("SNOWFLAKE_ACCOUNT"),
+        user=get_secret("SNOWFLAKE_USER"),
+        password=get_secret("SNOWFLAKE_PASSWORD"),
+        role=get_secret("SNOWFLAKE_ROLE"),
+        warehouse=get_secret("SNOWFLAKE_WAREHOUSE"),
+        database=get_secret("SNOWFLAKE_DATABASE"),
         schema="MARTS",
     )
 
