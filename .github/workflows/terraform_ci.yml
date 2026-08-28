@@ -19,18 +19,19 @@ jobs:
         working-directory: terraform
     env:
       SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.9.0"
+          terraform_version: "1.15.8"
 
       - name: terraform fmt -check
         run: terraform fmt -check -recursive
 
       - name: terraform init
-        run: terraform init -backend=false
+        run: terraform init
 
       - name: terraform validate
         run: terraform validate
@@ -60,15 +61,16 @@ jobs:
         working-directory: terraform
     env:
       SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.9.0"
+          terraform_version: "1.15.8"
 
       - name: terraform init
-        run: terraform init -backend=false
+        run: terraform init
 
       - name: terraform apply (deploy)
         if: ${{ env.SNOWFLAKE_ACCOUNT != '' }}

@@ -1,6 +1,17 @@
 terraform {
   required_version = ">= 1.5.0"
 
+  # Remote state in Terraform Cloud - shared between local runs and CI, so
+  # both see the same state instead of CI trying to recreate resources that
+  # already exist (which is what happened before this was added).
+  cloud {
+    organization = "trade-etl-case-study"
+
+    workspaces {
+      name = "trade-etl-case-study"
+    }
+  }
+
   required_providers {
     snowflake = {
       source  = "Snowflake-Labs/snowflake"

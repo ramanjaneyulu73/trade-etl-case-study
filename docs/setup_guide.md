@@ -45,6 +45,22 @@ container involved.
 
 ## 3. Provision Snowflake infrastructure with Terraform
 
+State is stored remotely in Terraform Cloud (`terraform/providers.tf`'s `cloud` block), not
+a local file — this is what lets both your machine and the `terraform-apply` CI job (see
+step 8) see the same state instead of each trying to recreate resources the other already
+made. One-time setup: sign up free at [app.terraform.io](https://app.terraform.io), create
+an organization and a workspace (CLI-driven workflow, Execution Mode: Local), then generate
+a User API token (User Settings → Tokens) and either run `terraform login` or write it to
+`%APPDATA%\terraform.d\credentials.tfrc.json`:
+
+```json
+{
+  "credentials": {
+    "app.terraform.io": { "token": "YOUR_TOKEN" }
+  }
+}
+```
+
 ```powershell
 cd terraform
 copy terraform.tfvars.example terraform.tfvars
