@@ -141,6 +141,25 @@ pip install -r dashboard\requirements.txt
 streamlit run dashboard\streamlit_app.py
 ```
 
+### Deploy it publicly with Streamlit Community Cloud (optional)
+
+Running locally only helps if whoever's reviewing this has the repo checked out and
+Snowflake access. A public URL is easier to hand off. Streamlit Community Cloud
+(free) deploys straight from GitHub:
+
+1. Go to [share.streamlit.io](https://share.streamlit.io), sign in with GitHub, and
+   authorize it against this repo (or all repos, your call).
+2. Click **New app**, pick this repo, branch `main`, and set the main file path to
+   `dashboard/streamlit_app.py`. Streamlit Cloud finds `dashboard/requirements.txt`
+   automatically since it's in the same folder as the entry point.
+3. Before it can connect to Snowflake, add secrets: in the app's **Settings →
+   Secrets**, paste the contents of `.streamlit/secrets.toml.example` with real values
+   filled in. This is a separate secrets store from GitHub's, so nothing here touches
+   the repo or gets committed.
+4. Deploy. The app reads credentials from `st.secrets` when there's no `.env` file
+   present (see `get_secret()` in `streamlit_app.py`), so no code changes are needed
+   between local and cloud runs.
+
 ## 8. Push to GitHub + CI/CD
 
 ```powershell
