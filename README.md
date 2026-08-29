@@ -4,6 +4,10 @@ A batch ETL pipeline that simulates trade messages, loads them into Snowflake, a
 versioning/expiry/maturity business rules in dbt, stores valid and rejected trades
 separately, and orchestrates the whole thing with Airflow.
 
+**Live dashboard**: https://trade-etl-case-study.streamlit.app/ — public, no login needed,
+pulling real data from the live warehouse. See [Proof](#proof) below for screenshots and
+what's actually been verified.
+
 ## Status
 
 | Area | State |
@@ -168,3 +172,37 @@ written and assumed correct:
   and an untested rejection rule that could structurally never fire. See
   [docs/validation_logic.md](docs/validation_logic.md) and
   [docs/architecture.md](docs/architecture.md) for the details
+
+## Proof
+
+Screenshots and raw command output for everything claimed above live in
+[docs/proof/](docs/proof/). Highlights:
+
+**Airflow — `trade_etl_pipeline` DAG**
+
+| | |
+|---|---|
+| ![DAG list](docs/proof/airflow_dag_list.png) | ![All tasks green](docs/proof/airflow_run_success.png) |
+| ![Graph view](docs/proof/airflow_graph_view.png) | ![DAG source](docs/proof/airflow_dag_code.png) |
+
+![Retry recovering from a real failure](docs/proof/airflow_retry_recovery.png)
+
+That last one is worth calling out specifically: it's the Audit Log for a scheduled
+`dbt_run` task going `failed` → `running` → `success`, about 5 minutes apart, matching
+this DAG's configured retry (`retries: 2, retry_delay: 5 minutes`) exactly. This is a
+real automatic recovery, not a staged screenshot — see the "CI/CD hardening" section of
+[docs/architecture.md](docs/architecture.md) for the specific bug it was recovering from.
+
+**Streamlit — live dashboard** ([open it yourself](https://trade-etl-case-study.streamlit.app/))
+
+| | |
+|---|---|
+| ![Dashboard overview](docs/proof/dashboard_overview.png) | ![Rejection reasons and notional by currency](docs/proof/dashboard_rejections_currency.png) |
+
+![Valid trades table](docs/proof/dashboard_valid_trades.png)
+
+**Terraform and dbt — raw output**
+
+- [`docs/proof/terraform_plan_zero_drift.txt`](docs/proof/terraform_plan_zero_drift.txt): `terraform plan` against the live warehouse, "No changes"
+- [`docs/proof/dbt_test_13_of_13.txt`](docs/proof/dbt_test_13_of_13.txt): `dbt test` run against live data, 13/13 passing
+- GitHub Actions history is public and needs no separate proof file: [github.com/ramanjaneyulu73/trade-etl-case-study/actions](https://github.com/ramanjaneyulu73/trade-etl-case-study/actions)
