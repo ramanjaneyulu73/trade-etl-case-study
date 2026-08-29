@@ -55,7 +55,14 @@ terraform apply
 ```
 
 By default this uses a local state file - no extra account needed, same as running
-Terraform anywhere else.
+Terraform anywhere else. This creates the `TRADE_ETL_WH` warehouse, `TRADE_ETL_DB`
+database, `RAW` schema, `RAW_TRADES` landing table, `RAW_TRADES_STAGE` internal stage, a
+`TRADE_ETL_ROLE` granted to your trial user, and the `HIGH_REJECTION_RATE` Snowflake
+Alert plus its email notification integration (`terraform/monitoring.tf`), which emails
+`alert_email` if `fct_rejected_trades` gains more than 10 rows in a 60-minute window.
+Note that this step only fully succeeds once `dbt run` (step 5) has created
+`MARTS.FCT_REJECTED_TRADES` at least once, since the alert's condition query reads that
+table.
 
 ### Optional: shared state for the CI/CD deploy pipeline
 
@@ -78,14 +85,6 @@ token (User Settings → Tokens) and either run `terraform login` or write it to
 Then copy `terraform/backend.tf.example` to `terraform/backend.tf` (gitignored - it's
 not meant to be committed) with your organization/workspace name filled in, and run
 `terraform init` again to migrate your local state into Terraform Cloud.
-
-This creates the `TRADE_ETL_WH` warehouse, `TRADE_ETL_DB` database, `RAW` schema,
-`RAW_TRADES` landing table, `RAW_TRADES_STAGE` internal stage, a `TRADE_ETL_ROLE`
-granted to your trial user, and the `HIGH_REJECTION_RATE` Snowflake Alert plus its email
-notification integration (`terraform/monitoring.tf`), which emails `alert_email` if
-`fct_rejected_trades` gains more than 10 rows in a 60-minute window. Note that this step
-only fully succeeds once `dbt run` (step 5) has created `MARTS.FCT_REJECTED_TRADES` at
-least once, since the alert's condition query reads that table.
 
 ## 4. Configure local credentials
 
