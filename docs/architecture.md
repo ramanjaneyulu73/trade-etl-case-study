@@ -136,7 +136,7 @@ The `production` Environment gate isn't there for show. The case-mismatch incide
 described below, where a live role grant got briefly revoked, was caught right at this
 gate, before it could compound into something worse.
 
-Terraform Cloud only matters for this diagram - the CI/CD deploy path. Run Terraform on
+Terraform Cloud only matters for this diagram — the CI/CD deploy path. Run Terraform on
 its own with no `backend.tf` present and `terraform init` falls back to a local state
 file, no account needed; that's the default a fresh clone gets (see
 [docs/proof/terraform_local_state_init.txt](proof/terraform_local_state_init.txt)). Add
@@ -226,7 +226,7 @@ that every row live in the hot table forever.
 
 ## Known limitations
 
-Deliberate trade-offs for case-study scope, not oversights - what a production version
+Deliberate trade-offs for case-study scope, not oversights — what a production version
 of this would do differently:
 
 **Snowflake auth is password-based**, not key-pair or OAuth. Simpler to set up against
@@ -234,7 +234,7 @@ a free trial account, but a production deployment would use key-pair auth (or ex
 browser/OAuth) so no long-lived password sits in `.env` or a GitHub Secret at all.
 
 **Airflow's SMTP credentials are a plaintext environment variable** in Docker Compose,
-not pulled from a secrets manager. Same trade-off as above - fine for a local trial, not
+not pulled from a secrets manager. Same trade-off as above — fine for a local trial, not
 for a real deployment.
 
 **CI's `--target ci` runs share the same Snowflake account and warehouse as
@@ -244,7 +244,7 @@ zero-copy clone of the database per PR) so a misconfigured `target` can't physic
 reach production data no matter what.
 
 **`mark_expired_trades()` is currently redundant** with the derived `trade_status`
-column in `fct_valid_trades` - see
+column in `fct_valid_trades` — see
 [validation_logic.md](validation_logic.md#fct_valid_trades-current-state-rule-4-mark-expired)
 for why it's kept anyway: it's the maintenance-mutation pattern this becomes
 load-bearing under once the model moves to incremental materialization (see
