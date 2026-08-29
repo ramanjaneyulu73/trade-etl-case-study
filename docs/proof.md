@@ -112,4 +112,4 @@ and moves to `data/processed/` as normal; the malformed one raises Snowflake's a
 `ProgrammingError` (`Error parsing JSON: unknown keyword "this"`), gets moved to
 `data/quarantine/`, and the script exits non-zero so an Airflow run would still alert. A
 second run with `data/incoming/` now empty confirms the quarantined file isn't
-re-attempted - no infinite retry loop on the same poison file.
+re-attempted — no infinite retry loop on the same poison file.

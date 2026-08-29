@@ -54,7 +54,7 @@ terraform plan
 terraform apply
 ```
 
-By default this uses a local state file - no extra account needed, same as running
+By default this uses a local state file — no extra account needed, same as running
 Terraform anywhere else. This creates the `TRADE_ETL_WH` warehouse, `TRADE_ETL_DB`
 database, `RAW` schema, `RAW_TRADES` landing table, `RAW_TRADES_STAGE` internal stage, a
 `TRADE_ETL_ROLE` granted to your trial user, and the `HIGH_REJECTION_RATE` Snowflake
@@ -67,7 +67,7 @@ table.
 ### Optional: shared state for the CI/CD deploy pipeline
 
 If you also want the `terraform-apply` CI job (step 8) to apply changes on merge to
-`main`, it needs to see the same state as your machine - otherwise CI just tries to
+`main`, it needs to see the same state as your machine — otherwise CI just tries to
 recreate resources that already exist. That requires remote state in Terraform Cloud:
 sign up free at [app.terraform.io](https://app.terraform.io), create an organization
 and a workspace (CLI-driven workflow, Execution Mode: Local), then generate a User API
@@ -82,7 +82,7 @@ token (User Settings → Tokens) and either run `terraform login` or write it to
 }
 ```
 
-Then copy `terraform/backend.tf.example` to `terraform/backend.tf` (gitignored - it's
+Then copy `terraform/backend.tf.example` to `terraform/backend.tf` (gitignored — it's
 not meant to be committed) with your organization/workspace name filled in, and run
 `terraform init` again to migrate your local state into Terraform Cloud.
 

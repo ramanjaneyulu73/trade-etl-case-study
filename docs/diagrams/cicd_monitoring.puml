@@ -42,7 +42,7 @@ Web ..> Inbox : email_on_failure\n(Airflow task retries exhausted)
 note bottom of Env
   Required reviewer, admin bypass disabled,
   restricted to main branch. This gate is not
-  hypothetical caution - a real incident (a
+  hypothetical caution — a real incident (a
   case-mismatch bug briefly revoking a live
   role grant) was caught here. See
   docs/architecture.md's "CI/CD hardening"
@@ -52,7 +52,7 @@ end note
 note bottom of TFState
   Only needed for this CI/CD path. With no
   backend.tf present, `terraform init` falls
-  back to local state - no account required.
+  back to local state — no account required.
   Both modes verified: see
   docs/proof/terraform_local_state_init.txt and
   docs/proof/terraform_apply_after_backend_split.txt
