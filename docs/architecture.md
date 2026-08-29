@@ -9,7 +9,8 @@ renders it inline via Mermaid). The same diagram is also kept as PlantUML source
 
 1. `ingestion/generate_trades.py` simulates a batch of trade messages (new trades,
    amendments, same-version corrections, stale/out-of-order versions, already-matured
-   trades) and writes them as a `.jsonl` file to `data/incoming/`.
+   trades, and a small share of invalid ones — non-positive notional, unsupported
+   currency) and writes them as a `.jsonl` file to `data/incoming/`.
 2. `ingestion/load_to_snowflake.py` stages the file (`PUT`) to an internal Snowflake
    stage and loads it (`COPY INTO`) into `RAW.RAW_TRADES` as `VARIANT` rows, then moves
    the file to `data/processed/` so re-running never double-loads it.
