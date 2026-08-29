@@ -176,9 +176,12 @@ original test-data generator. Details in
 
 ## Proof
 
-Full screenshots and raw command output for every claim above: [docs/proof.md](docs/proof.md).
-Two samples — the live dashboard, and a Terraform Cloud run history with a real error left
-visible rather than only showing the clean runs:
+> [!TIP]
+> **Open [docs/proof.md](docs/proof.md) for the full set of screenshots and raw command
+> output** — every claim in this README traces back to something there.
+
+Two samples here — the live dashboard, and a Terraform Cloud run history with a real error
+left visible rather than only showing the clean runs:
 
 | | |
 |---|---|
