@@ -1,0 +1,44 @@
+05:53:04  Running with dbt=1.12.3
+05:53:05  Registered adapter: snowflake=1.12.0
+05:53:06  Found 4 models, 16 data tests, 1 source, 547 macros
+05:53:06  
+05:53:06  Concurrency: 4 threads (target='dev')
+05:53:06  
+05:53:07  1 of 16 START test accepted_values_fct_valid_trades_trade_status__ACTIVE__EXPIRED  [RUN]
+05:53:07  2 of 16 START test accepted_values_int_trade_classification_disposition__VALID_CURRENT__REJECTED_LOWER_VERSION__SUPERSEDED_SAME_VERSION__REJECTED_PAST_MATURITY__REJECTED_INVALID_NOTIONAL__REJECTED_INVALID_CURRENCY__REJECTED_INVALID_DATES  [RUN]
+05:53:07  3 of 16 START test assert_no_invalid_dates_in_valid_trades ..................... [RUN]
+05:53:07  4 of 16 START test not_null_fct_rejected_trades_rejection_reason ............... [RUN]
+05:53:08  1 of 16 PASS accepted_values_fct_valid_trades_trade_status__ACTIVE__EXPIRED .... [PASS in 0.73s]
+05:53:08  5 of 16 START test not_null_fct_valid_trades_trade_id .......................... [RUN]
+05:53:08  5 of 16 PASS not_null_fct_valid_trades_trade_id ................................ [PASS in 0.13s]
+05:53:08  6 of 16 START test not_null_fct_valid_trades_trade_status ...................... [RUN]
+05:53:08  4 of 16 PASS not_null_fct_rejected_trades_rejection_reason ..................... [PASS in 0.96s]
+05:53:08  7 of 16 START test not_null_int_trade_classification_disposition ............... [RUN]
+05:53:08  6 of 16 PASS not_null_fct_valid_trades_trade_status ............................ [PASS in 0.15s]
+05:53:08  8 of 16 START test not_null_int_trade_classification_trade_id .................. [RUN]
+05:53:08  3 of 16 PASS assert_no_invalid_dates_in_valid_trades ........................... [PASS in 1.09s]
+05:53:08  9 of 16 START test not_null_stg_trades_counterparty ............................ [RUN]
+05:53:09  8 of 16 PASS not_null_int_trade_classification_trade_id ........................ [PASS in 0.59s]
+05:53:09  9 of 16 PASS not_null_stg_trades_counterparty .................................. [PASS in 0.52s]
+05:53:09  10 of 16 START test not_null_stg_trades_currency ............................... [RUN]
+05:53:09  11 of 16 START test not_null_stg_trades_maturity_date .......................... [RUN]
+05:53:09  2 of 16 PASS accepted_values_int_trade_classification_disposition__VALID_CURRENT__REJECTED_LOWER_VERSION__SUPERSEDED_SAME_VERSION__REJECTED_PAST_MATURITY__REJECTED_INVALID_NOTIONAL__REJECTED_INVALID_CURRENCY__REJECTED_INVALID_DATES  [PASS in 1.66s]
+05:53:09  7 of 16 PASS not_null_int_trade_classification_disposition ..................... [PASS in 0.70s]
+05:53:09  12 of 16 START test not_null_stg_trades_notional ............................... [RUN]
+05:53:09  13 of 16 START test not_null_stg_trades_trade_date ............................. [RUN]
+05:53:09  10 of 16 PASS not_null_stg_trades_currency ..................................... [PASS in 0.21s]
+05:53:09  14 of 16 START test not_null_stg_trades_trade_id ............................... [RUN]
+05:53:09  11 of 16 PASS not_null_stg_trades_maturity_date ................................ [PASS in 0.23s]
+05:53:09  15 of 16 START test not_null_stg_trades_version ................................ [RUN]
+05:53:09  12 of 16 PASS not_null_stg_trades_notional ..................................... [PASS in 0.23s]
+05:53:09  16 of 16 START test unique_fct_valid_trades_trade_id ........................... [RUN]
+05:53:09  13 of 16 PASS not_null_stg_trades_trade_date ................................... [PASS in 0.24s]
+05:53:09  14 of 16 PASS not_null_stg_trades_trade_id ..................................... [PASS in 0.15s]
+05:53:09  15 of 16 PASS not_null_stg_trades_version ...................................... [PASS in 0.18s]
+05:53:09  16 of 16 PASS unique_fct_valid_trades_trade_id ................................. [PASS in 0.14s]
+05:53:10  
+05:53:10  Finished running 16 data tests in 0 hours 0 minutes and 4.03 seconds (4.03s).
+05:53:10  
+05:53:10  Completed successfully
+05:53:10  
+05:53:10  Done. PASS=16 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=16

@@ -1,0 +1,35 @@
+2026-08-29 11:21:59,853 INFO Snowflake Connector for Python Version: 4.7.2, Python Version: 3.11.9, Platform: Windows-10-10.0.26200-SP0
+2026-08-29 11:21:59,853 INFO Connecting to GLOBAL Snowflake domain
+2026-08-29 11:22:03,364 INFO Loaded trades_20260829T055158489670.jsonl -> 1 rows_parsed/rows_loaded rows: [('raw_trades_stage/trades_20260829T055158489670.jsonl.gz', 'LOADED', 3, 3, 1, 0, None, None, None, None)]
+2026-08-29 11:22:04,272 ERROR Rejected by Snowflake, quarantining trades_broken_TEST.jsonl
+Traceback (most recent call last):
+  File "C:\myApp\trade-etl-case-study\ingestion\load_to_snowflake.py", line 126, in main
+    load_file(cur, database, schema, stage, file_path)
+  File "C:\myApp\trade-etl-case-study\ingestion\load_to_snowflake.py", line 93, in load_file
+    cur.execute(copy_sql)
+  File "C:\myApp\trade-etl-case-study\.venv\Lib\site-packages\snowflake\connector\cursor.py", line 1142, in execute
+    Error.errorhandler_wrapper(self.connection, self, error_class, errvalue)
+  File "C:\myApp\trade-etl-case-study\.venv\Lib\site-packages\snowflake\connector\errors.py", line 298, in errorhandler_wrapper
+    handed_over = Error.hand_to_other_handler(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\myApp\trade-etl-case-study\.venv\Lib\site-packages\snowflake\connector\errors.py", line 354, in hand_to_other_handler
+    cursor.errorhandler(connection, cursor, error_class, error_value)
+  File "C:\myApp\trade-etl-case-study\.venv\Lib\site-packages\snowflake\connector\errors.py", line 229, in default_errorhandler
+    raise error_class(
+snowflake.connector.errors.ProgrammingError: 100069 (22P02): 01c6b520-3203-3d6d-0018-1d260001f52e: Error parsing JSON: unknown keyword "this"
+  File 'stages/ea842352-b54a-4f46-8a5d-343e60923ca4/trades_broken_TEST.jsonl.gz', line 1, character 5
+  Row 0, column $1
+  If you would like to continue loading when an error is encountered, use other values such as 'SKIP_FILE' or 'CONTINUE' for the ON_ERROR option. For more information on loading options, please run 'info loading_data' in a SQL client.
+Traceback (most recent call last):
+  File "C:\myApp\trade-etl-case-study\ingestion\load_to_snowflake.py", line 152, in <module>
+    main()
+  File "C:\myApp\trade-etl-case-study\ingestion\load_to_snowflake.py", line 146, in main
+    raise RuntimeError(
+RuntimeError: 1 file(s) rejected by Snowflake, moved to C:\myApp\trade-etl-case-study\data\quarantine: ['trades_broken_TEST.jsonl']
+=== directory state after the run ===
+incoming/: 0 file(s)
+quarantine/: trades_broken_TEST.jsonl
+
+=== re-running with incoming/ now empty confirms no infinite retry loop ===
+2026-08-29 11:22:17,164 INFO No files to load in C:\myApp\trade-etl-case-study\data\incoming
+second run exit: 0

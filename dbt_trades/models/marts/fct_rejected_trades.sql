@@ -1,13 +1,16 @@
 {{ config(
     materialized='incremental',
-    incremental_strategy='append',
-    unique_key=['trade_id', 'version', 'source_file_name']
+    incremental_strategy='append'
 ) }}
 
 /*
   Append-only compliance audit log (rule 6). Every distinct rejected message
   is recorded exactly once, keeping its original rejected_at even if the
   classification view is recomputed on later runs.
+
+  No unique_key here deliberately - the 'append' strategy ignores it (dbt
+  only honors unique_key for 'merge'/'delete+insert'), so dedup is done by
+  hand below via the NOT EXISTS anti-join instead.
 */
 
 select

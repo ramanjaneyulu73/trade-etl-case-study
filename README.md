@@ -15,7 +15,7 @@ what's actually been verified.
 | Code: ingestion, dbt project, Terraform, Airflow DAG, dashboard, CI/CD | ✅ Complete and validated end-to-end (see [Validated so far](#validated-so-far)) |
 | Snowflake trial account | ✅ Live (AWS Singapore) |
 | `terraform apply` | ✅ Applied. Warehouse, database, schemas, role, grants, and monitoring are all live. Zero drift. Local state by default; this deployment's state happens to be in Terraform Cloud, which is optional (see [setup guide](docs/setup_guide.md#3-provision-snowflake-infrastructure-with-terraform)) |
-| `dbt run` / `dbt test` against the live warehouse | ✅ 13/13 tests passing, all 4 non-supersede rejection reasons exercised |
+| `dbt run` / `dbt test` against the live warehouse | ✅ 16/16 tests passing, all 4 non-supersede rejection reasons exercised |
 | Docker Desktop + WSL2 + Airflow | ✅ `trade_etl_pipeline` DAG has run end-to-end in Docker: generate, load, dbt run, dbt test, mark expired, all tasks green |
 | Streamlit dashboard | ✅ Redesigned, running against live Snowflake data |
 | CI/CD: validate + deploy | ✅ `dbt_ci`/`terraform_ci` validate on every push/PR. Deploy jobs run on merge to `main`, gated behind a `production` GitHub Environment that needs manual approval. History of every run is public: [Actions tab](https://github.com/ramanjaneyulu73/trade-etl-case-study/actions) |
@@ -151,7 +151,7 @@ work in theory":
   `COPY INTO`-loading real trade batches into `RAW.RAW_TRADES`. The generator also
   produces some deliberately invalid notional and currency values so every rejection
   rule actually gets exercised, not just the common ones.
-- `dbt run` + `dbt test`: 13/13 tests passing. See
+- `dbt run` + `dbt test`: 16/16 tests passing. See
   [docs/validation_logic.md](docs/validation_logic.md#verified-against-a-live-warehouse)
   for the rule-by-rule breakdown.
 - The full Docker Compose Airflow stack (Postgres, webserver, scheduler) has been
