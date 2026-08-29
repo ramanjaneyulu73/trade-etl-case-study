@@ -21,6 +21,7 @@ terraform/terraform.tfvars
 .env
 *.pem
 *.key
+.streamlit/secrets.toml
 
 # generated data
 data/incoming/*.jsonl
