@@ -1,0 +1,31 @@
+Run: https://github.com/ramanjaneyulu73/trade-etl-case-study/actions/runs/33234139779
+Job: terraform-apply (post-merge of PR #17, "Make Terraform Cloud remote state optional")
+
+This is the terraform-apply CI job running immediately after backend.tf was
+split out of providers.tf into a gitignored file (CI now writes it fresh
+before init). Same Terraform Cloud workspace, same live resources - the goal
+was to prove the reorg didn't disturb anything.
+
+ Running apply in HCP Terraform. Output will stream here. Pressing Ctrl-C
+ Preparing the remote apply...
+ To view this run in a browser, visit:
+ Waiting for the plan to start...
+ Terraform v1.15.8
+ snowflake_email_notification_integration.trade_etl_alerts: Refreshing state... [id=TRADE_ETL_ALERT_EMAIL]
+ snowflake_database.trade_etl_db: Refreshing state... [id=TRADE_ETL_DB]
+ snowflake_warehouse.trade_etl_wh: Refreshing state... [id=TRADE_ETL_WH]
+ snowflake_account_role.trade_etl_role: Refreshing state... [id=TRADE_ETL_ROLE]
+ snowflake_grant_account_role.trade_etl_role_to_user: Refreshing state... [id="TRADE_ETL_ROLE"|USER|"RAMANJANEYULU73"]
+ snowflake_grant_privileges_to_account_role.execute_alert: Refreshing state... [id="TRADE_ETL_ROLE"|false|false|EXECUTE ALERT|OnAccount]
+ snowflake_grant_privileges_to_account_role.integration_usage: Refreshing state... [id="TRADE_ETL_ROLE"|false|false|USAGE|OnAccountObject|INTEGRATION|"TRADE_ETL_ALERT_EMAIL"]
+ snowflake_grant_privileges_to_account_role.wh_usage: Refreshing state... [id="TRADE_ETL_ROLE"|false|false|USAGE|OnAccountObject|WAREHOUSE|"TRADE_ETL_WH"]
+ snowflake_grant_privileges_to_account_role.db_usage_and_create_schema: Refreshing state... [id="TRADE_ETL_ROLE"|false|false|CREATE SCHEMA,USAGE|OnAccountObject|DATABASE|"TRADE_ETL_DB"]
+ snowflake_schema.raw: Refreshing state... [id="TRADE_ETL_DB"."RAW"]
+ snowflake_stage.raw_trades_stage: Refreshing state... [id=TRADE_ETL_DB|RAW|RAW_TRADES_STAGE]
+ snowflake_alert.high_rejection_rate: Refreshing state... [id=TRADE_ETL_DB|RAW|HIGH_REJECTION_RATE]
+ snowflake_grant_privileges_to_account_role.raw_schema_all: Refreshing state... [id="TRADE_ETL_ROLE"|false|false|ALL|OnSchema|OnSchema|"TRADE_ETL_DB"."RAW"]
+ snowflake_table.raw_trades: Refreshing state... [id=TRADE_ETL_DB|RAW|RAW_TRADES]
+ snowflake_warehouse.trade_etl_wh: Drift detected (update)
+ No changes. Your infrastructure matches the configuration.
+ Terraform has compared your real infrastructure against your configuration
+ and found no differences, so no changes are needed.
