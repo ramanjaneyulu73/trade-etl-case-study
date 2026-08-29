@@ -1,0 +1,39 @@
+Initializing the backend...
+
+Initializing provider plugins...
+- Finding snowflake-labs/snowflake versions matching ">= 0.94.0, < 1.0.0"...
+- Installing snowflake-labs/snowflake v0.100.0...
+- Installed snowflake-labs/snowflake v0.100.0 (signed by a HashiCorp partner, key ID 5166D7352E69A585)
+Partner and community providers are signed by their developers.
+If you'd like to know more about provider signing, you can read about it here:
+https://developer.hashicorp.com/terraform/cli/plugins/signing
+
+Terraform has created a lock file .terraform.lock.hcl to record the provider
+selections it made above. Include this file in your version control repository
+so that Terraform can guarantee to make the same selections by default when
+you run "terraform init" in the future.
+
+
+Warning: Additional provider information from registry
+
+The remote registry returned warnings for
+registry.terraform.io/snowflake-labs/snowflake:
+- For users on Terraform 0.13 or greater, this provider has moved to
+snowflakedb/snowflake. Please update your source in required_providers.
+Terraform has been successfully initialized!
+
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+Success! The configuration is valid.
+
+
+# This ran with no backend.tf present (only the tracked terraform/*.tf files,
+# same as a fresh git clone) - the generic "Terraform has been successfully
+# initialized!" message, not "HCP Terraform has been successfully
+# initialized!", confirms it fell back to the default local-state backend.
+# No Terraform Cloud account was needed for init/validate to succeed.

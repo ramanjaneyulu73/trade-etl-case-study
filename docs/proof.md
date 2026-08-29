@@ -85,3 +85,20 @@ than only showing the clean runs.
 - [`proof/terraform_plan_zero_drift.txt`](proof/terraform_plan_zero_drift.txt): `terraform plan` against the live warehouse, "No changes"
 - [`proof/dbt_test_13_of_13.txt`](proof/dbt_test_13_of_13.txt): `dbt test` run against live data, 13/13 passing
 - GitHub Actions history is public and needs no separate proof file: [github.com/ramanjaneyulu73/trade-etl-case-study/actions](https://github.com/ramanjaneyulu73/trade-etl-case-study/actions)
+
+**Terraform Cloud is optional, not required**
+
+`terraform/providers.tf` used to hardcode a Terraform Cloud `cloud {}` block, which
+meant `terraform init` failed for anyone without a Terraform Cloud account — a
+dependency the case study's own guidance never asked for. That block now lives in a
+gitignored `terraform/backend.tf` instead, so it's opt-in.
+
+- [`proof/terraform_local_state_init.txt`](proof/terraform_local_state_init.txt):
+  `terraform init` + `terraform validate` run against only the tracked `terraform/*.tf`
+  files (no `backend.tf`, same as a fresh clone) — succeeds with the default local
+  backend, no Terraform Cloud account involved.
+- [`proof/terraform_apply_after_backend_split.txt`](proof/terraform_apply_after_backend_split.txt):
+  the `terraform-apply` CI job immediately after merging that change, applying against
+  the same live Terraform Cloud workspace as before — "No changes. Your infrastructure
+  matches the configuration," confirming the split didn't disturb the existing state or
+  the CI/CD deploy pipeline.
