@@ -1,0 +1,4 @@
+NAMES                         IMAGE                       STATUS                             PORTS
+airflow-airflow-webserver-1   airflow-airflow-webserver   Up 49 seconds (health: starting)   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+airflow-airflow-scheduler-1   airflow-airflow-scheduler   Up 5 minutes                       8080/tcp
+airflow-postgres-1            postgres:16                 Up 6 minutes (healthy)             5432/tcp
