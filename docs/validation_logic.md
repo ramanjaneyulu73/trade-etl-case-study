@@ -96,6 +96,9 @@ Every rule above was actually exercised against a real Snowflake trial account:
   generator to produce a small share of non-positive-notional and unsupported-currency
   trades, and confirmed live that both reasons now show up in `fct_rejected_trades`,
   with `dbt test` still at 13/13.
+- Staging-layer test coverage was later broadened - `stg_trades` only tested
+  `trade_id`/`version`/`maturity_date`/`notional` for `not_null`, nothing on
+  `currency`/`trade_date`/`counterparty` - so the current suite is 16/16, not 13/13.
 
 ## Why this tech stack
 

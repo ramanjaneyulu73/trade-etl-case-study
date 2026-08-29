@@ -83,7 +83,7 @@ hardening" section of [architecture.md](architecture.md), left visible rather
 than only showing the clean runs.
 
 - [`proof/terraform_plan_zero_drift.txt`](proof/terraform_plan_zero_drift.txt): `terraform plan` against the live warehouse, "No changes"
-- [`proof/dbt_test_13_of_13.txt`](proof/dbt_test_13_of_13.txt): `dbt test` run against live data, 13/13 passing
+- [`proof/dbt_test_16_of_16.txt`](proof/dbt_test_16_of_16.txt): `dbt test` run against live data, 16/16 passing
 - GitHub Actions history is public and needs no separate proof file: [github.com/ramanjaneyulu73/trade-etl-case-study/actions](https://github.com/ramanjaneyulu73/trade-etl-case-study/actions)
 
 **Terraform Cloud is optional, not required**
@@ -102,3 +102,14 @@ gitignored `terraform/backend.tf` instead, so it's opt-in.
   the same live Terraform Cloud workspace as before — "No changes. Your infrastructure
   matches the configuration," confirming the split didn't disturb the existing state or
   the CI/CD deploy pipeline.
+
+**Ingestion quarantines bad files instead of retrying them forever**
+
+[`proof/ingestion_quarantine_bad_file.txt`](proof/ingestion_quarantine_bad_file.txt) is
+a real run of `load_to_snowflake.py` against a batch with one valid file and one
+deliberately malformed one, dropped in `data/incoming/` together. The valid file loads
+and moves to `data/processed/` as normal; the malformed one raises Snowflake's actual
+`ProgrammingError` (`Error parsing JSON: unknown keyword "this"`), gets moved to
+`data/quarantine/`, and the script exits non-zero so an Airflow run would still alert. A
+second run with `data/incoming/` now empty confirms the quarantined file isn't
+re-attempted - no infinite retry loop on the same poison file.

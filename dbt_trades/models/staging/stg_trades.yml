@@ -12,9 +12,18 @@ models:
         description: Monotonically increasing version number assigned by the upstream booking system.
         tests:
           - not_null
+      - name: trade_date
+        tests:
+          - not_null
       - name: maturity_date
         tests:
           - not_null
       - name: notional
+        tests:
+          - not_null
+      - name: currency
+        tests:
+          - not_null
+      - name: counterparty
         tests:
           - not_null

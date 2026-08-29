@@ -42,6 +42,17 @@ a null one. The distinction is deliberate: a bad row shouldn't stop the batch (r
 and move on), but a broken invariant should stop the pipeline before bad data reaches
 `MARTS`.
 
+That handles bad *rows* inside an otherwise-loadable file. A structurally broken *file*
+(invalid JSON, wrong shape) is a different failure mode one level up:
+`load_to_snowflake.py` catches Snowflake's `ProgrammingError` for that specific file,
+moves it to `data/quarantine/` instead of leaving it in `data/incoming/`, and keeps
+loading the rest of the batch, then raises once at the end so the Airflow task still
+fails and alerts. Without this, a single malformed file would fail the DAG identically
+on every future run (never actually retried away) while also blocking every other file
+in the same batch from loading. Confirmed live: a deliberately malformed `.jsonl`
+alongside a valid one loads the good file, quarantines the bad one, and a re-run doesn't
+re-attempt it.
+
 **Task failures.** Every Airflow task retries twice with a 5-minute delay before
 failing the DAG, and `email_on_failure=True` alerts on the final failure. Each stage
 (generate, load, dbt run, dbt test, mark expired) is its own task, so the UI points at
@@ -212,3 +223,29 @@ version-lookback scan stays cheap as the table grows.
 as-is. At very high volume it's a good candidate for a retention/archival policy, moving
 rows older than N years to cheaper storage, since compliance requires retention, not
 that every row live in the hot table forever.
+
+## Known limitations
+
+Deliberate trade-offs for case-study scope, not oversights - what a production version
+of this would do differently:
+
+**Snowflake auth is password-based**, not key-pair or OAuth. Simpler to set up against
+a free trial account, but a production deployment would use key-pair auth (or external
+browser/OAuth) so no long-lived password sits in `.env` or a GitHub Secret at all.
+
+**Airflow's SMTP credentials are a plaintext environment variable** in Docker Compose,
+not pulled from a secrets manager. Same trade-off as above - fine for a local trial, not
+for a real deployment.
+
+**CI's `--target ci` runs share the same Snowflake account and warehouse as
+production**, isolated only by schema (`ci_analytics` vs `analytics`), not a separate
+account. A stricter setup would run CI against its own Snowflake account (or a
+zero-copy clone of the database per PR) so a misconfigured `target` can't physically
+reach production data no matter what.
+
+**`mark_expired_trades()` is currently redundant** with the derived `trade_status`
+column in `fct_valid_trades` - see
+[validation_logic.md](validation_logic.md#fct_valid_trades-current-state-rule-4-mark-expired)
+for why it's kept anyway: it's the maintenance-mutation pattern this becomes
+load-bearing under once the model moves to incremental materialization (see
+Scalability above), demonstrated now rather than retrofitted later.
