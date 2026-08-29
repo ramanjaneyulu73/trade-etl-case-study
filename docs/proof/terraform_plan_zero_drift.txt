@@ -1,0 +1,20 @@
+snowflake_warehouse.trade_etl_wh: Refreshing state... [id=TRADE_ETL_WH]
+snowflake_grant_privileges_to_account_role.integration_usage: Refreshing state... [id="TRADE_ETL_ROLE"|false|false|USAGE|OnAccountObject|INTEGRATION|"TRADE_ETL_ALERT_EMAIL"]
+snowflake_grant_privileges_to_account_role.wh_usage: Refreshing state... [id="TRADE_ETL_ROLE"|false|false|USAGE|OnAccountObject|WAREHOUSE|"TRADE_ETL_WH"]
+snowflake_grant_privileges_to_account_role.db_usage_and_create_schema: Refreshing state... [id="TRADE_ETL_ROLE"|false|false|CREATE SCHEMA,USAGE|OnAccountObject|DATABASE|"TRADE_ETL_DB"]
+snowflake_schema.raw: Refreshing state... [id="TRADE_ETL_DB"."RAW"]
+snowflake_stage.raw_trades_stage: Refreshing state... [id=TRADE_ETL_DB|RAW|RAW_TRADES_STAGE]
+snowflake_grant_privileges_to_account_role.raw_schema_all: Refreshing state... [id="TRADE_ETL_ROLE"|false|false|ALL|OnSchema|OnSchema|"TRADE_ETL_DB"."RAW"]
+snowflake_alert.high_rejection_rate: Refreshing state... [id=TRADE_ETL_DB|RAW|HIGH_REJECTION_RATE]
+snowflake_table.raw_trades: Refreshing state... [id=TRADE_ETL_DB|RAW|RAW_TRADES]
+snowflake_warehouse.trade_etl_wh: Drift detected (update)
+
+No changes. Your infrastructure matches the configuration.
+
+Terraform has compared your real infrastructure against your configuration
+and found no differences, so no changes are needed.
+
+─────────────────────────────────────────────────────────────────────────────
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.
