@@ -193,6 +193,12 @@ this DAG's configured retry (`retries: 2, retry_delay: 5 minutes`) exactly. This
 real automatic recovery, not a staged screenshot — see the "CI/CD hardening" section of
 [docs/architecture.md](docs/architecture.md) for the specific bug it was recovering from.
 
+[`docs/proof/docker_ps.txt`](docs/proof/docker_ps.txt) is a plain `docker ps` capture
+showing the actual containers behind these screenshots: the Postgres metadata DB, the
+scheduler, and the webserver serving port 8080 — this is the same Docker Compose stack
+(`orchestration/airflow/docker-compose.yaml`) described in the setup guide, not something
+different in a screenshot.
+
 **Streamlit — live dashboard** ([open it yourself](https://trade-etl-case-study.streamlit.app/))
 
 | | |
@@ -200,6 +206,17 @@ real automatic recovery, not a staged screenshot — see the "CI/CD hardening" s
 | ![Dashboard overview](docs/proof/dashboard_overview.png) | ![Rejection reasons and notional by currency](docs/proof/dashboard_rejections_currency.png) |
 
 ![Valid trades table](docs/proof/dashboard_valid_trades.png)
+
+**Snowflake Alert — running unattended, not a one-off demo**
+
+[`docs/proof/snowflake_alert_history.txt`](docs/proof/snowflake_alert_history.txt) is a
+fresh `ALERT_HISTORY` query, not the same run described in the "CI/CD hardening" section
+of [docs/architecture.md](docs/architecture.md). It shows `HIGH_REJECTION_RATE` firing on
+its own 60-minute schedule continuously since it was created, entirely without anyone
+watching: two real `TRIGGERED` events roughly 10 hours apart, one `ACTION_FAILED` from the
+missing-grant bug before it was fixed, and `CONDITION_FALSE` on every other tick, which is
+what a healthy run looks like when rejection volume is normal. This isn't a screenshot of
+one lucky firing, it's the alert doing its job for over a day straight.
 
 **Terraform and dbt — raw output**
 
