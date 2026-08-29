@@ -199,6 +199,13 @@ scheduler, and the webserver serving port 8080 — this is the same Docker Compo
 (`orchestration/airflow/docker-compose.yaml`) described in the setup guide, not something
 different in a screenshot.
 
+![Docker Desktop showing the built images](docs/proof/docker_desktop_images.png)
+
+The containers themselves get torn down between runs to free up RAM on a
+resource-constrained machine (see `docs/setup_guide.md`'s Docker Desktop / WSL2 note),
+but the images they're built from persist locally — this is Docker Desktop's own Images
+tab, not just the CLI.
+
 **Streamlit — live dashboard** ([open it yourself](https://trade-etl-case-study.streamlit.app/))
 
 | | |
