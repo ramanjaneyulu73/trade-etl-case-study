@@ -14,11 +14,11 @@ what's actually been verified.
 |---|---|
 | Code: ingestion, dbt project, Terraform, Airflow DAG, dashboard, CI/CD | ✅ Complete and validated end-to-end (see [Validated so far](#validated-so-far)) |
 | Snowflake trial account | ✅ Live (AWS Singapore) |
-| `terraform apply` | ✅ Applied. Warehouse, database, schemas, role, grants, and monitoring are all live. Zero drift, remote state in Terraform Cloud |
+| `terraform apply` | ✅ Applied. Warehouse, database, schemas, role, grants, and monitoring are all live. Zero drift. Local state by default; this deployment's state happens to be in Terraform Cloud, which is optional (see [setup guide](docs/setup_guide.md#3-provision-snowflake-infrastructure-with-terraform)) |
 | `dbt run` / `dbt test` against the live warehouse | ✅ 13/13 tests passing, all 4 non-supersede rejection reasons exercised |
 | Docker Desktop + WSL2 + Airflow | ✅ `trade_etl_pipeline` DAG has run end-to-end in Docker: generate, load, dbt run, dbt test, mark expired, all tasks green |
 | Streamlit dashboard | ✅ Redesigned, running against live Snowflake data |
-| CI/CD: validate + deploy | ✅ `dbt_ci`/`terraform_ci` validate on every push/PR. Deploy jobs run on merge to `main`, gated behind a `production` GitHub Environment that needs manual approval. 6 PRs merged this way so far, all green |
+| CI/CD: validate + deploy | ✅ `dbt_ci`/`terraform_ci` validate on every push/PR. Deploy jobs run on merge to `main`, gated behind a `production` GitHub Environment that needs manual approval. History of every run is public: [Actions tab](https://github.com/ramanjaneyulu73/trade-etl-case-study/actions) |
 | Live Snowflake Alert | ✅ `HIGH_REJECTION_RATE` alert with an email notification integration, provisioned via Terraform, fired for real |
 
 Everything below has been run against the live pipeline, not just written and reasoned
@@ -114,7 +114,7 @@ cd .. && streamlit run dashboard\streamlit_app.py
 |---|---|
 | [`ingestion/`](ingestion/) | Simulated trade generator + the Snowflake-native loader (`PUT` + `COPY INTO`) |
 | [`dbt_trades/`](dbt_trades/) | dbt project: `staging` → `int_trade_classification` → `fct_valid_trades` / `fct_rejected_trades`. Start reading at [docs/validation_logic.md](docs/validation_logic.md) |
-| [`terraform/`](terraform/) | Warehouse, database, `RAW` schema, stage, role and grants, monitoring alert. Remote state in Terraform Cloud |
+| [`terraform/`](terraform/) | Warehouse, database, `RAW` schema, stage, role and grants, monitoring alert. Local state by default; remote state in Terraform Cloud is optional |
 | [`orchestration/airflow/`](orchestration/airflow/) | The DAG (`dags/trade_etl_dag.py`) plus a Docker Compose stack to run it |
 | [`dashboard/`](dashboard/) | Streamlit trade-status dashboard (`streamlit_app.py`) |
 | [`docs/`](docs/) | Architecture, setup guide, validation-logic writeup, [proof](docs/proof.md), PlantUML diagram sources |
@@ -134,8 +134,8 @@ All six live in one place: [`dbt_trades/models/marts/int_trade_classification.sq
 ## Tech stack
 
 Snowflake (ingestion, storage, native Alerts) · dbt Core (`dbt-snowflake`) · Apache
-Airflow (Docker) · Terraform (`Snowflake-Labs/snowflake` provider, remote state in
-Terraform Cloud) · Streamlit · GitHub Actions (validate + approval-gated deploy)
+Airflow (Docker) · Terraform (`Snowflake-Labs/snowflake` provider, optional remote
+state in Terraform Cloud) · Streamlit · GitHub Actions (validate + approval-gated deploy)
 
 ## Validated so far
 
@@ -144,7 +144,9 @@ work in theory":
 
 - `terraform apply` provisioned `TRADE_ETL_WH`, `TRADE_ETL_DB`, the `RAW`/`STAGING`/`MARTS`
   schemas, role and grants, and the `HIGH_REJECTION_RATE` monitoring alert. `terraform
-  plan` shows zero drift against remote state in Terraform Cloud.
+  plan` shows zero drift. This deployment's state lives in Terraform Cloud, which is
+  optional - by default `terraform init` just uses local state (see
+  [docs/proof/terraform_local_state_init.txt](docs/proof/terraform_local_state_init.txt)).
 - `generate_trades.py` and `load_to_snowflake.py` have been run repeatedly, staging and
   `COPY INTO`-loading real trade batches into `RAW.RAW_TRADES`. The generator also
   produces some deliberately invalid notional and currency values so every rejection
@@ -159,7 +161,9 @@ work in theory":
   `fct_rejected_trades` data.
 - CI/CD actually deploys, it doesn't just validate. `terraform-apply` and `dbt-deploy`
   run on merge to `main`, gated behind a `production` Environment's required-reviewer
-  approval. 6 PRs have gone through this flow, all green.
+  approval, and every run is public in the
+  [Actions tab](https://github.com/ramanjaneyulu73/trade-etl-case-study/actions) rather
+  than a claimed count that'd go stale the next time something merges.
 - The Snowflake Alert isn't just sitting there configured. Real trade batches were
   generated until rejections crossed the alert's threshold, the alert fired, and both
   `ALERT_HISTORY` (state `TRIGGERED`) and the actual email confirm it works.
