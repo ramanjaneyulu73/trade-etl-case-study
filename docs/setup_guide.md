@@ -2,20 +2,20 @@
 
 ## 1. Create a free Snowflake trial account
 
-Snowflake is cloud-only — there's no local emulator, so this step has to happen in a
+Snowflake is cloud-only. There's no local emulator, so this step has to happen in a
 browser and can't be scripted:
 
 1. Go to https://signup.snowflake.com/
 2. Fill in your details, pick any cloud provider/region (AWS is fine), and choose the
    **Standard** edition (plenty for this project).
 3. Verify your email and set a password.
-4. After first login, note your **account identifier** — shown in the URL, e.g.
-   `https://xy12345.us-east-1.snowflakecomputing.com` → account identifier is
-   `xy12345.us-east-1`. You'll need this for every config file below.
+4. After first login, note your **account identifier**, shown in the URL. For
+   `https://xy12345.us-east-1.snowflakecomputing.com` that's `xy12345.us-east-1`. You'll
+   need this for every config file below.
 5. Your trial user is created with `ACCOUNTADMIN`. Terraform in this repo runs as
-   `SYSADMIN` (better practice than provisioning with `ACCOUNTADMIN`) — your trial user
-   already has `SYSADMIN` available; just make sure the role is active
-   (`use role sysadmin;` in a worksheet, or Terraform sets it per-session).
+   `SYSADMIN` instead (better practice than provisioning with `ACCOUNTADMIN`); your
+   trial user already has `SYSADMIN` available, just make sure the role is active
+   (`use role sysadmin;` in a worksheet, or let Terraform set it per-session).
 
 ## 2. Install tooling
 
@@ -45,13 +45,13 @@ container involved.
 
 ## 3. Provision Snowflake infrastructure with Terraform
 
-State is stored remotely in Terraform Cloud (`terraform/providers.tf`'s `cloud` block), not
-a local file — this is what lets both your machine and the `terraform-apply` CI job (see
-step 8) see the same state instead of each trying to recreate resources the other already
-made. One-time setup: sign up free at [app.terraform.io](https://app.terraform.io), create
-an organization and a workspace (CLI-driven workflow, Execution Mode: Local), then generate
-a User API token (User Settings → Tokens) and either run `terraform login` or write it to
-`%APPDATA%\terraform.d\credentials.tfrc.json`:
+State is stored remotely in Terraform Cloud (`terraform/providers.tf`'s `cloud` block),
+not a local file. That's what lets both your machine and the `terraform-apply` CI job
+(see step 8) see the same state, instead of each one trying to recreate resources the
+other already made. One-time setup: sign up free at [app.terraform.io](https://app.terraform.io),
+create an organization and a workspace (CLI-driven workflow, Execution Mode: Local),
+then generate a User API token (User Settings → Tokens) and either run `terraform
+login` or write it to `%APPDATA%\terraform.d\credentials.tfrc.json`:
 
 ```json
 {
@@ -71,12 +71,12 @@ terraform apply
 ```
 
 This creates the `TRADE_ETL_WH` warehouse, `TRADE_ETL_DB` database, `RAW` schema,
-`RAW_TRADES` landing table, `RAW_TRADES_STAGE` internal stage, a `TRADE_ETL_ROLE` granted
-to your trial user, and the `HIGH_REJECTION_RATE` Snowflake Alert + email notification
-integration (`terraform/monitoring.tf`) that emails `alert_email` if `fct_rejected_trades`
-gains more than 10 rows in a 60-minute window - note this step only fully succeeds once
-`dbt run` (step 5) has created `MARTS.FCT_REJECTED_TRADES` at least once, since the
-alert's condition query reads that table.
+`RAW_TRADES` landing table, `RAW_TRADES_STAGE` internal stage, a `TRADE_ETL_ROLE`
+granted to your trial user, and the `HIGH_REJECTION_RATE` Snowflake Alert plus its email
+notification integration (`terraform/monitoring.tf`), which emails `alert_email` if
+`fct_rejected_trades` gains more than 10 rows in a 60-minute window. Note that this step
+only fully succeeds once `dbt run` (step 5) has created `MARTS.FCT_REJECTED_TRADES` at
+least once, since the alert's condition query reads that table.
 
 ## 4. Configure local credentials
 
@@ -87,9 +87,9 @@ notepad .env   # SNOWFLAKE_ACCOUNT / USER / PASSWORD / ROLE / WAREHOUSE / DATABA
 copy dbt_trades\profiles.yml.example dbt_trades\profiles.yml
 ```
 
-`profiles.yml` reads from the same `SNOWFLAKE_*` environment variables — either load
-`.env` into your shell (`python -c "from dotenv import load_dotenv; load_dotenv()"` or
-use a tool like `direnv`) before running `dbt`, or just set them directly:
+`profiles.yml` reads from the same `SNOWFLAKE_*` environment variables. Either load
+`.env` into your shell before running `dbt` (`python -c "from dotenv import
+load_dotenv; load_dotenv()"`, or a tool like `direnv`), or just set them directly:
 
 ```powershell
 $env:SNOWFLAKE_ACCOUNT="xy12345.us-east-1"
@@ -180,20 +180,20 @@ present.
 
 ### Set up the `production` environment (required for CI/CD deploy)
 
-`dbt_ci.yml`/`terraform_ci.yml` don't just validate - `dbt-deploy` and `terraform-apply`
+`dbt_ci.yml` and `terraform_ci.yml` also deploy: the `dbt-deploy` and `terraform-apply`
 jobs run on every push to `main`, applying real changes to the live Snowflake account.
 Without a protected environment, they'd run unattended the moment secrets are present.
 In **Settings → Environments**:
 
-1. **New environment**, name it `production`
-2. Under **Deployment protection rules**, check **Required reviewers** and add yourself
-3. Under **Deployment branches and tags**, since `main` almost certainly isn't a
+1. **New environment**, name it `production`.
+2. Under **Deployment protection rules**, check **Required reviewers** and add yourself.
+3. Under **Deployment branches and tags**: `main` almost certainly isn't a
    [protected branch](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches)
-   in a fresh repo, pick **Selected branches and tags** (not "Protected branches only" -
-   that would block every deploy since no branch would match) and add a rule: ref type
-   `Branch`, name pattern `main`
-4. Leave **Allow administrators to bypass configured protection rules** unchecked -
-   otherwise the approval step is trivially skippable and the gate is decorative
+   in a fresh repo, so pick **Selected branches and tags**, not "Protected branches
+   only" (that would block every deploy, since no branch would match). Add a rule: ref
+   type `Branch`, name pattern `main`.
+4. Leave **Allow administrators to bypass configured protection rules** unchecked.
+   Otherwise the approval step is trivially skippable and the gate is just for show.
 
 Once this exists, every push to `main` that touches `dbt_trades/**` or `terraform/**`
 triggers a deploy job that pauses under **Actions → (the run) → Review pending
