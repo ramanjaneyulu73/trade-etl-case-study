@@ -92,9 +92,8 @@ PlantUML sources for both diagrams live in [docs/diagrams/](docs/diagrams/).
 ## Quick start
 
 Full walkthrough: [docs/setup_guide.md](docs/setup_guide.md). Short version, assuming
-you already have a Snowflake trial account, a free Terraform Cloud account for remote
-state (`terraform login`, or a token in `%APPDATA%\terraform.d\credentials.tfrc.json` —
-setup guide §3), and the required tools:
+you already have a Snowflake trial account and the required tools (Terraform Cloud is
+only needed for the optional CI/CD deploy pipeline — setup guide §3):
 
 ```powershell
 cd terraform && terraform init && terraform apply         # provision warehouse/db/schema/stage/role/alert

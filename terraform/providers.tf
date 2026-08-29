@@ -1,16 +1,12 @@
 terraform {
   required_version = ">= 1.5.0"
 
-  # Remote state in Terraform Cloud - shared between local runs and CI, so
-  # both see the same state instead of CI trying to recreate resources that
-  # already exist (which is what happened before this was added).
-  cloud {
-    organization = "trade-etl-case-study"
-
-    workspaces {
-      name = "trade-etl-case-study"
-    }
-  }
+  # Remote state (Terraform Cloud) is optional and lives in backend.tf, not
+  # here - see backend.tf.example. Without it, `terraform init` just uses a
+  # local state file, no extra account needed. It only matters if you want
+  # the CI/CD deploy pipeline in .github/workflows/terraform_ci.yml, since
+  # that's what lets your machine and CI see the same state instead of each
+  # one trying to recreate resources the other already made.
 
   required_providers {
     snowflake = {

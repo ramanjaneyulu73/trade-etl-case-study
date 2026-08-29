@@ -45,13 +45,27 @@ container involved.
 
 ## 3. Provision Snowflake infrastructure with Terraform
 
-State is stored remotely in Terraform Cloud (`terraform/providers.tf`'s `cloud` block),
-not a local file. That's what lets both your machine and the `terraform-apply` CI job
-(see step 8) see the same state, instead of each one trying to recreate resources the
-other already made. One-time setup: sign up free at [app.terraform.io](https://app.terraform.io),
-create an organization and a workspace (CLI-driven workflow, Execution Mode: Local),
-then generate a User API token (User Settings → Tokens) and either run `terraform
-login` or write it to `%APPDATA%\terraform.d\credentials.tfrc.json`:
+```powershell
+cd terraform
+copy terraform.tfvars.example terraform.tfvars
+notepad terraform.tfvars   # fill in your account id, trial username/password, alert_email
+terraform init
+terraform plan
+terraform apply
+```
+
+By default this uses a local state file - no extra account needed, same as running
+Terraform anywhere else.
+
+### Optional: shared state for the CI/CD deploy pipeline
+
+If you also want the `terraform-apply` CI job (step 8) to apply changes on merge to
+`main`, it needs to see the same state as your machine - otherwise CI just tries to
+recreate resources that already exist. That requires remote state in Terraform Cloud:
+sign up free at [app.terraform.io](https://app.terraform.io), create an organization
+and a workspace (CLI-driven workflow, Execution Mode: Local), then generate a User API
+token (User Settings → Tokens) and either run `terraform login` or write it to
+`%APPDATA%\terraform.d\credentials.tfrc.json`:
 
 ```json
 {
@@ -61,14 +75,9 @@ login` or write it to `%APPDATA%\terraform.d\credentials.tfrc.json`:
 }
 ```
 
-```powershell
-cd terraform
-copy terraform.tfvars.example terraform.tfvars
-notepad terraform.tfvars   # fill in your account id, trial username/password, alert_email
-terraform init
-terraform plan
-terraform apply
-```
+Then copy `terraform/backend.tf.example` to `terraform/backend.tf` (gitignored - it's
+not meant to be committed) with your organization/workspace name filled in, and run
+`terraform init` again to migrate your local state into Terraform Cloud.
 
 This creates the `TRADE_ETL_WH` warehouse, `TRADE_ETL_DB` database, `RAW` schema,
 `RAW_TRADES` landing table, `RAW_TRADES_STAGE` internal stage, a `TRADE_ETL_ROLE`

@@ -27,6 +27,23 @@ jobs:
         with:
           terraform_version: "1.15.8"
 
+      # backend.tf is gitignored (see backend.tf.example) so a plain local
+      # `terraform init` doesn't force every clone into a Terraform Cloud
+      # signup - CI writes the real one here since org/workspace names
+      # aren't secret.
+      - name: Write Terraform Cloud backend config
+        run: |
+          cat > backend.tf <<'EOF'
+          terraform {
+            cloud {
+              organization = "trade-etl-case-study"
+              workspaces {
+                name = "trade-etl-case-study"
+              }
+            }
+          }
+          EOF
+
       - name: terraform fmt -check
         run: terraform fmt -check -recursive
 
@@ -69,6 +86,19 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.15.8"
+
+      - name: Write Terraform Cloud backend config
+        run: |
+          cat > backend.tf <<'EOF'
+          terraform {
+            cloud {
+              organization = "trade-etl-case-study"
+              workspaces {
+                name = "trade-etl-case-study"
+              }
+            }
+          }
+          EOF
 
       - name: terraform init
         run: terraform init

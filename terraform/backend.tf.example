@@ -1,0 +1,18 @@
+# Optional. Copy this to backend.tf (gitignored) to point Terraform at a
+# Terraform Cloud workspace, so both your machine and the CI/CD deploy job in
+# .github/workflows/terraform_ci.yml share the same state.
+#
+# Without this file, `terraform init` just uses a local state file - no
+# Terraform Cloud account needed. That's enough if you only want to run
+# Terraform locally per the base case study; this is only for the CI/CD
+# deploy bonus described in docs/architecture.md.
+
+terraform {
+  cloud {
+    organization = "your-terraform-cloud-org"
+
+    workspaces {
+      name = "your-workspace-name"
+    }
+  }
+}
