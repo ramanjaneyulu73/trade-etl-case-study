@@ -15,7 +15,7 @@ what's actually been verified.
 | Code: ingestion, dbt project, Terraform, Airflow DAG, dashboard, CI/CD | ✅ Complete and validated end-to-end (see [Validated so far](#validated-so-far)) |
 | Snowflake trial account | ✅ Live (AWS Singapore) |
 | `terraform apply` | ✅ Applied. Warehouse, database, schemas, role, grants, and monitoring are all live. Zero drift. Local state by default; this deployment's state happens to be in Terraform Cloud, which is optional (see [setup guide](docs/setup_guide.md#3-provision-snowflake-infrastructure-with-terraform)) |
-| `dbt run` / `dbt test` against the live warehouse | ✅ 16/16 tests passing, all 5 rejection reasons exercised (4 from a generated batch, the 5th via a hand-crafted trade - see [validation_logic.md](docs/validation_logic.md#verified-against-a-live-warehouse)) |
+| `dbt run` / `dbt test` against the live warehouse | ✅ 16/16 tests passing, all 5 rejection reasons exercised (4 from a generated batch, the 5th via a hand-crafted trade — see [validation_logic.md](docs/validation_logic.md#verified-against-a-live-warehouse)) |
 | Docker Desktop + WSL2 + Airflow | ✅ `trade_etl_pipeline` DAG has run end-to-end in Docker: generate, load, dbt run, dbt test, mark expired, all tasks green |
 | Streamlit dashboard | ✅ Redesigned, running against live Snowflake data |
 | CI/CD: validate + deploy | ✅ `dbt_ci`/`terraform_ci` validate on every push/PR. Deploy jobs run on merge to `main`, gated behind a `production` GitHub Environment that needs manual approval. History of every run is public: [Actions tab](https://github.com/ramanjaneyulu73/trade-etl-case-study/actions) |
@@ -145,13 +145,13 @@ work in theory":
 - `terraform apply` provisioned `TRADE_ETL_WH`, `TRADE_ETL_DB`, the `RAW`/`STAGING`/`MARTS`
   schemas, role and grants, and the `HIGH_REJECTION_RATE` monitoring alert. `terraform
   plan` shows zero drift. This deployment's state lives in Terraform Cloud, which is
-  optional - by default `terraform init` just uses local state (see
+  optional — by default `terraform init` just uses local state (see
   [docs/proof/terraform_local_state_init.txt](docs/proof/terraform_local_state_init.txt)).
 - `generate_trades.py` and `load_to_snowflake.py` have been run repeatedly, staging and
   `COPY INTO`-loading real trade batches into `RAW.RAW_TRADES`. The generator also
   produces some deliberately invalid notional and currency values so every rejection
   rule actually gets exercised, not just the common ones. A structurally malformed file
-  gets quarantined rather than blocking the batch or retrying forever - confirmed live
+  gets quarantined rather than blocking the batch or retrying forever — confirmed live
   with a real bad file (see
   [docs/proof/ingestion_quarantine_bad_file.txt](docs/proof/ingestion_quarantine_bad_file.txt)).
 - `dbt run` + `dbt test`: 16/16 tests passing. See
@@ -176,10 +176,9 @@ A handful of bugs only turned up because things were actually run, not just read
 dbt/Airflow version mismatch that crashed the container, a GitHub Actions workflow that
 silently never parsed at all, a Terraform state split between local and CI that briefly
 revoked a live role grant, and a rejection rule that could never have fired with the
-original test-data generator. Details in
-[docs/validation_logic.md](docs/validation_logic.md) and
-[docs/architecture.md](docs/architecture.md), which also has a
-[Known limitations](docs/architecture.md#known-limitations) section - deliberate
+original test-data generator. Details in [docs/validation_logic.md](docs/validation_logic.md)
+and [docs/architecture.md](docs/architecture.md). The latter also has a
+[Known limitations](docs/architecture.md#known-limitations) section — deliberate
 trade-offs like password-based Snowflake auth, not gaps found later.
 
 ## Proof
