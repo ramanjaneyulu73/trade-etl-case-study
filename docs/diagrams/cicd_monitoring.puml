@@ -9,7 +9,7 @@ package "GitHub" {
   [production Environment\n(required reviewer)] as Env
 }
 
-cloud "Terraform Cloud" {
+cloud "Terraform Cloud (optional)" {
   [Remote state\n(CLI-driven, execution: local)] as TFState
 }
 
@@ -47,6 +47,15 @@ note bottom of Env
   role grant) was caught here. See
   docs/architecture.md's "CI/CD hardening"
   section.
+end note
+
+note bottom of TFState
+  Only needed for this CI/CD path. With no
+  backend.tf present, `terraform init` falls
+  back to local state - no account required.
+  Both modes verified: see
+  docs/proof/terraform_local_state_init.txt and
+  docs/proof/terraform_apply_after_backend_split.txt
 end note
 
 @enduml

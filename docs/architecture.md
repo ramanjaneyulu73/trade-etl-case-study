@@ -98,7 +98,7 @@ flowchart LR
         Env(["production Environment\n(required reviewer)"])
     end
 
-    TFC[("Terraform Cloud\n(remote state)")]
+    TFC[("Terraform Cloud\n(remote state, optional)")]
     TF["Terraform CLI\n(local or CI runner)"]
 
     subgraph SF["Snowflake trial account"]
@@ -124,6 +124,15 @@ flowchart LR
 The `production` Environment gate isn't there for show. The case-mismatch incident
 described below, where a live role grant got briefly revoked, was caught right at this
 gate, before it could compound into something worse.
+
+Terraform Cloud only matters for this diagram - the CI/CD deploy path. Run Terraform on
+its own with no `backend.tf` present and `terraform init` falls back to a local state
+file, no account needed; that's the default a fresh clone gets (see
+[docs/proof/terraform_local_state_init.txt](proof/terraform_local_state_init.txt)). Add
+`backend.tf` (from `backend.tf.example`) and the exact same configuration runs against
+Terraform Cloud instead, which is what CI does and what
+[docs/proof/terraform_apply_after_backend_split.txt](proof/terraform_apply_after_backend_split.txt)
+confirms still applies cleanly against the live warehouse.
 
 ## CI/CD hardening: what live deployment actually surfaced
 
