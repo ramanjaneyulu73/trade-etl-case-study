@@ -71,6 +71,14 @@ updated, keyed on `(trade_id, version, source_file_name)`. Re-running
 rows, because the incremental insert-only strategy anti-joins against what's already in
 the table.
 
+This model is explicitly `incremental_strategy='append'`, not the Snowflake adapter's
+default `merge`, and deliberately carries no `unique_key`. dbt only honors `unique_key`
+for the `merge`/`delete+insert` strategies - setting one on an `append` model is a no-op
+that would just mislead a future reader into thinking dbt enforces uniqueness here. The
+real dedup is the explicit `not exists` anti-join on `(trade_id, version,
+source_file_name)` inside the model's `is_incremental()` block, done by hand because the
+config flag wouldn't have done it anyway.
+
 ## Verified against a live warehouse
 
 Every rule above was actually exercised against a real Snowflake trial account:
