@@ -207,18 +207,49 @@ different in a screenshot.
 
 ![Valid trades table](docs/proof/dashboard_valid_trades.png)
 
+![Deployment config on Streamlit Community Cloud](docs/proof/streamlit_cloud_deployment.png)
+
+That last one shows the actual deployment record: this app, on this account, built from
+`trade-etl-case-study · main · dashboard/streamlit_app.py` — not a different app that
+happens to look similar.
+
+**Snowflake — Snowsight**
+
+| | |
+|---|---|
+| ![Schema tree and a live query](docs/proof/snowsight_schema_and_query.png) | ![Rejection breakdown matching the dashboard exactly](docs/proof/snowsight_rejection_breakdown.png) |
+
+The database tree shows `RAW`/`STAGING`/`MARTS` under `TRADE_ETL_DB` with real
+table/view counts, and the rejection-reason counts in the second query
+(215/4/42/4) match the dashboard and `dbt_test` output exactly — same
+underlying data, three different views of it.
+
 **Snowflake Alert — running unattended, not a one-off demo**
+
+![Real alert email received in Gmail](docs/proof/gmail_alert_received.png)
 
 [`docs/proof/snowflake_alert_history.txt`](docs/proof/snowflake_alert_history.txt) is a
 fresh `ALERT_HISTORY` query, not the same run described in the "CI/CD hardening" section
 of [docs/architecture.md](docs/architecture.md). It shows `HIGH_REJECTION_RATE` firing on
 its own 60-minute schedule continuously since it was created, entirely without anyone
-watching: two real `TRIGGERED` events roughly 10 hours apart, one `ACTION_FAILED` from the
-missing-grant bug before it was fixed, and `CONDITION_FALSE` on every other tick, which is
-what a healthy run looks like when rejection volume is normal. This isn't a screenshot of
-one lucky firing, it's the alert doing its job for over a day straight.
+watching: two real `TRIGGERED` events roughly 10 hours apart (both landed in the inbox
+above), one `ACTION_FAILED` from the missing-grant bug before it was fixed, and
+`CONDITION_FALSE` on every other tick, which is what a healthy run looks like when
+rejection volume is normal. This isn't a screenshot of one lucky firing, it's the alert
+doing its job for over a day straight, landing in a real inbox.
 
-**Terraform and dbt — raw output**
+**Terraform Cloud and dbt**
+
+| | |
+|---|---|
+| ![Workspace overview](docs/proof/terraform_cloud_overview.png) | ![Outputs](docs/proof/terraform_cloud_outputs.png) |
+
+![Run history: 21 successes, 1 real error](docs/proof/terraform_cloud_runs.png)
+
+The run history shows "Errored 1" out of 22 runs, not a suspiciously perfect all-green
+history — that one error is the case-mismatch incident documented in the "CI/CD
+hardening" section of [docs/architecture.md](docs/architecture.md), left visible rather
+than only showing the clean runs.
 
 - [`docs/proof/terraform_plan_zero_drift.txt`](docs/proof/terraform_plan_zero_drift.txt): `terraform plan` against the live warehouse, "No changes"
 - [`docs/proof/dbt_test_13_of_13.txt`](docs/proof/dbt_test_13_of_13.txt): `dbt test` run against live data, 13/13 passing
